@@ -1,7 +1,6 @@
 import cv2
-import numpy as np
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
@@ -20,10 +19,10 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     # Display the resulting frame
     faces = face_cascade.detectMultiScale(
-        gray, scaleFactor=1.3, minNeighbors=5, minSize=(30, 30))
+        gray, scaleFactor=2, minNeighbors=1, minSize=(10, 10))
 
     for (x, y, w, h) in faces:
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) == ord('q'):
