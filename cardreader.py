@@ -1,49 +1,54 @@
-"""
-    @Author:        Silas Rodriguez
-    @Description:   Use OpenCV to identify playing cards
-"""
 # Import the libraries to use
 import cv2
 import os
+import time
+import sys
 
-# Define the path to the folder containing card images
-image_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+CAMERA = 0
+MIN_AREA = 200
+MAX_AREA = 999900000
 
-# Load the binarized card images for faces and values
-face_images = {
-    'diamond': cv2.imread(os.path.join(image_folder, 'Diamonds.jpg'), 0),
-    'clubs': cv2.imread(os.path.join(image_folder, 'Clubs.jpg'), 0),
-    'hearts': cv2.imread(os.path.join(image_folder, 'Hearts.jpg'), 0),
-    'spades': cv2.imread(os.path.join(image_folder, 'Spades.jpg'), 0),
-}
-value_images = {
-    '2': cv2.imread(os.path.join(image_folder, '2.jpg'), 0),
-    '3': cv2.imread(os.path.join(image_folder, '3.jpg'), 0),
-    '4': cv2.imread(os.path.join(image_folder, '4.jpg'), 0),
-    '5': cv2.imread(os.path.join(image_folder, '5.jpg'), 0),
-    '6': cv2.imread(os.path.join(image_folder, '6.jpg'), 0),
-    '7': cv2.imread(os.path.join(image_folder, '7.jpg'), 0),
-    '8': cv2.imread(os.path.join(image_folder, '8.jpg'), 0),
-    '9': cv2.imread(os.path.join(image_folder, '9.jpg'), 0),
-    '10': cv2.imread(os.path.join(image_folder, '10.jpg'), 0),
-    'jack': cv2.imread(os.path.join(image_folder, 'jack.jpg'), 0),
-    'queen': cv2.imread(os.path.join(image_folder, 'queen.jpg'), 0),
-    'king': cv2.imread(os.path.join(image_folder, 'king.jpg'), 0),
-    'ace': cv2.imread(os.path.join(image_folder, 'ace.jpg'), 0),
-}
 
-# Initialize the webcam
-cap = cv2.VideoCapture(1)
+def process_frame(frame):
+    # print(f"Checking for area with: {MIN_AREA} < A < {MAX_AREA}")
+    i = 0
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-# Create a separate window for the thresholded image
-cv2.namedWindow('Thresholded Image', cv2.WINDOW_NORMAL)
+    # adaptive threshold
+    thresh = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
 
-while True:
-    ret, frame = cap.read()
-    # frame = cv2.imread('./data/diamonds5.jpg')
-    if not ret:
-        break
+    # Fill rectangular contours
+    cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    for c in cnts:
+        cv2.drawContours(thresh, [c], -1, (255, 255, 255), -1)
 
+    # Morph open
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
+    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=4)
+
+    # Draw rectangles, the 'area_treshold' value was determined empirically
+    cnts = cv2.findContours(opening, cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+    # WHAT DOES THIS SHIT DO
+    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    for c in cnts:
+        if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
+            x, y, w, h = cv2.boundingRect(c)
+            cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
+                          (36, 255, 12), 3)
+
+            card = frame[y:y+h, x:x+w]
+            card = card[0:120, 0:175]
+            return (1, card)
+            # cv2.imwrite(f'kaart_{i}.jpg', card)
+            # i += 1
+
+    return (0, frame)
+
+
+def get_match(frame):
     # Apply bilateral filtering to the frame
     frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
 
@@ -51,7 +56,8 @@ while True:
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # Apply adaptive thresholding to the grayscale frame
-    thresh_frame = cv2.adaptiveThreshold(gray_frame, 200, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+    thresh_frame = cv2.adaptiveThreshold(
+        gray_frame, 200, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
 
     # Expand the black background to cover the whole top of the frame
     frame[0:60, :] = (0, 0, 0)
@@ -64,7 +70,8 @@ while True:
 
     for face_name, face_image in face_images.items():
         # Try to match the face in the entire frame
-        face_match = cv2.matchTemplate(thresh_frame, face_image, cv2.TM_CCOEFF_NORMED)
+        face_match = cv2.matchTemplate(
+            thresh_frame, face_image, cv2.TM_CCOEFF_NORMED)
 
         # Find the maximum similarity score
         _, max_val_face, _, _ = cv2.minMaxLoc(face_match)
@@ -76,7 +83,8 @@ while True:
 
     for value_name, value_image in value_images.items():
         # Try to match the value in the entire frame
-        value_match = cv2.matchTemplate(thresh_frame, value_image, cv2.TM_CCOEFF_NORMED)
+        value_match = cv2.matchTemplate(
+            thresh_frame, value_image, cv2.TM_CCOEFF_NORMED)
 
         # Find the maximum similarity score
         _, max_val_value, _, _ = cv2.minMaxLoc(value_match)
@@ -86,20 +94,109 @@ while True:
             best_match_value_score = max_val_value
             best_match_value = value_name
 
-    # Display the thresholded image in the 'Thresholded Image' window
-    cv2.imshow('Thresholded Image', thresh_frame)
-
     # Display the result with improved readability
     cv2.putText(frame, f"Face: {best_match_face}, Value: {best_match_value}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
                 (0, 255, 0), 2)
+    print(f"Face: {best_match_face}, Value: {best_match_value}")
 
-    # Show the frame
-    cv2.imshow('Card Detection', frame)
-
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
 
 # Release the webcam and close all windows
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    image_folder = os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), "data")
 
+    # Create a separate window for the thresholded image
+    # Load the binarized card images for faces and values
+    face_images = {
+        'diamond': cv2.imread(os.path.join(image_folder, 'Diamonds.jpg'), 0),
+        'clubs': cv2.imread(os.path.join(image_folder, 'Clubs.jpg'), 0),
+        'hearts': cv2.imread(os.path.join(image_folder, 'Hearts.jpg'), 0),
+        'spades': cv2.imread(os.path.join(image_folder, 'Spades.jpg'), 0),
+    }
+
+    value_images = {
+        '2': cv2.imread(os.path.join(image_folder, '2.jpg'), 0),
+        '3': cv2.imread(os.path.join(image_folder, '3.jpg'), 0),
+        '4': cv2.imread(os.path.join(image_folder, '4.jpg'), 0),
+        '5': cv2.imread(os.path.join(image_folder, '5.jpg'), 0),
+        '6': cv2.imread(os.path.join(image_folder, '6.jpg'), 0),
+        '7': cv2.imread(os.path.join(image_folder, '7.jpg'), 0),
+        '8': cv2.imread(os.path.join(image_folder, '8.jpg'), 0),
+        '9': cv2.imread(os.path.join(image_folder, '9.jpg'), 0),
+        '10': cv2.imread(os.path.join(image_folder, '10.jpg'), 0),
+        'jack': cv2.imread(os.path.join(image_folder, 'jack.jpg'), 0),
+        'queen': cv2.imread(os.path.join(image_folder, 'queen.jpg'), 0),
+        'king': cv2.imread(os.path.join(image_folder, 'king.jpg'), 0),
+        'ace': cv2.imread(os.path.join(image_folder, 'ace.jpg'), 0),
+    }
+
+    for i, arg in enumerate(sys.argv):
+        if i == 1:
+            CAMERA = arg
+
+    cap = cv2.VideoCapture(CAMERA)
+
+    if not cap.isOpened():
+        print("Cannot open camera")
+        exit()
+
+    i = 0
+    while True:
+        ret, frame = cap.read()
+        # frame = cv2.imread('./data/diamonds5.jpg')
+        if not ret:
+            break
+
+        use_frame = frame.copy()
+        cv2.imshow('Card Detection', frame)
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # adaptive threshold
+        thresh = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
+
+        # Fill rectangular contours
+        cnts = cv2.findContours(
+            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        for c in cnts:
+            cv2.drawContours(thresh, [c], -1, (255, 255, 255), -1)
+
+        # Morph open
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
+        opening = cv2.morphologyEx(
+            thresh, cv2.MORPH_OPEN, kernel, iterations=4)
+
+        # Draw rectangles, the 'area_treshold' value was determined empirically
+        cnts = cv2.findContours(opening, cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+        # WHAT DOES THIS SHIT DO
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        got_card = 0
+        for c in cnts:
+            if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
+
+                got_card = 1
+                x, y, w, h = cv2.boundingRect(c)
+                cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
+                              (36, 255, 12), 3)
+
+                card = frame[y:y+h, x:x+w]
+                card = card[0:120, 0:150]
+                i += 1
+
+#        res, card = process_frame(use_frame)
+#        if not res:
+#            continue
+
+        if got_card:
+            print("GOT A CARD")
+            cv2.imshow('CARD FRAME', card)
+            get_match(card)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()

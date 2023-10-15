@@ -3,7 +3,7 @@ import time
 
 # Load frame, grayscale, blur, Otsu's threshold
 i = 0
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Cannot open camera")
     exit()
@@ -38,9 +38,12 @@ while True:
     cnts = cv2.findContours(opening, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-    area_treshold = 4000
+    area_treshold = 100
     for c in cnts:
-        if cv2.contourArea(c) > area_treshold and cv2.contourArea(c) < 300000:
+        x, y, w, h = cv2.boundingRect(c)
+        cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
+                      (36, 255, 12), 3)
+        if cv2.contourArea(c) > area_treshold and cv2.contourArea(c) < 3000000000:
             print(cv2.contourArea(c))
             x, y, w, h = cv2.boundingRect(c)
             cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
@@ -54,7 +57,6 @@ while True:
             print(i)
             time.sleep(0.1)
 
-    cv2.imshow('thresh', thresh)
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) == ord('q'):
         break
