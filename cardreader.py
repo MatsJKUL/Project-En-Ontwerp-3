@@ -75,19 +75,20 @@ def get_match(frame):
     best_match_face_score = float('-inf')  # Initialize to negative infinity
     best_match_value_score = float('-inf')  # Initialize to negative infinity
 
-    down_width = 200
-    down_height = 200
+    down_width = 500
+    down_height = 500
     down_points = (down_width, down_height)
     face_frame = thresh_frame.copy()
-    face_frame = face_frame[70:120, 5: 90]
+    face_frame = face_frame[10:80, 5: 75]
     resized_down = cv2.resize(
-        face_frame, down_points, interpolation=cv2.INTER_LINEAR)
-    cv2.imshow('DOWN FRAME', resized_down)
+        thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
 
     for face_name, face_image in face_images.items():
         # Try to match the face in the entire frame
         face_match = cv2.matchTemplate(
             resized_down, face_image, cv2.TM_CCOEFF_NORMED)
+
+        print(face_name)
 
         template = cv2.imread(f'./data/{face_name}.jpg', cv2.IMREAD_GRAYSCALE)
         w, h = template.shape[::-1]
@@ -193,7 +194,7 @@ if __name__ == "__main__":
 
         if got_card:
             print("GOT A CARD")
-            cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
+            # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
             get_match(card)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
