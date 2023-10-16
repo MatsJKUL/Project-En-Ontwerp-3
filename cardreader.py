@@ -45,7 +45,7 @@ def process_frame(frame):
                           (36, 255, 12), 3)
 
             card = frame[y:y+h, x:x+w]
-            card = card[0:80, 0:120]
+            card = card[0:125, 0: 100]
 
     cv2.imshow('Card Detection', frame)
     return got_card, card
@@ -53,6 +53,9 @@ def process_frame(frame):
 
 def get_match(frame):
     # Apply bilateral filtering to the frame
+    if (frame.shape[0]*frame.shape[1] < 5000):
+        return
+
     cv2.imshow('CARD FRAME', card)
     frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
 
@@ -72,25 +75,41 @@ def get_match(frame):
     best_match_face_score = float('-inf')  # Initialize to negative infinity
     best_match_value_score = float('-inf')  # Initialize to negative infinity
 
-    down_width = 70
-    down_height = 120
+    down_width = 200
+    down_height = 200
     down_points = (down_width, down_height)
+    face_frame = thresh_frame.copy()
+    face_frame = face_frame[70:120, 5: 90]
     resized_down = cv2.resize(
-        thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
-
+        face_frame, down_points, interpolation=cv2.INTER_LINEAR)
     cv2.imshow('DOWN FRAME', resized_down)
+
     for face_name, face_image in face_images.items():
         # Try to match the face in the entire frame
         face_match = cv2.matchTemplate(
             resized_down, face_image, cv2.TM_CCOEFF_NORMED)
 
+        template = cv2.imread(f'./data/{face_name}.jpg', cv2.IMREAD_GRAYSCALE)
+        w, h = template.shape[::-1]
         # Find the maximum similarity score
-        _, max_val_face, _, _ = cv2.minMaxLoc(face_match)
+        _, max_val_face, _, max_loc = cv2.minMaxLoc(face_match)
+        top_left = max_loc
 
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+        cv2.rectangle(resized_down, top_left, bottom_right, 255, 2)
+
+        cv2.imshow('DOWN FRAME', resized_down)
         # Update the best match for faces if a better match is found
         if max_val_face > best_match_face_score:
             best_match_face_score = max_val_face
             best_match_face = face_name
+
+    down_width = 200
+    down_height = 200
+    down_points = (down_width, down_height)
+    thresh_frame = thresh_frame[10:80, 5: 75]
+    resized_down = cv2.resize(
+        thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
 
     for value_name, value_image in value_images.items():
         # Try to match the value in the entire frame
@@ -98,8 +117,18 @@ def get_match(frame):
             resized_down, value_image, cv2.TM_CCOEFF_NORMED)
 
         # Find the maximum similarity score
-        _, max_val_value, _, _ = cv2.minMaxLoc(value_match)
+        _, max_val_value, _, max_loc = cv2.minMaxLoc(value_match)
 
+        template = cv2.imread(f'./data/{value_name}.jpg', cv2.IMREAD_GRAYSCALE)
+        w, h = template.shape[::-1]
+        # Find the maximum similarity score
+        _, max_val_face, _, max_loc = cv2.minMaxLoc(value_match)
+        top_left = max_loc
+
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+        cv2.rectangle(resized_down, top_left, bottom_right, 255, 2)
+
+        # cv2.imshow('DOWN FRAME', resized_down)
         # Update the best match for values if a better match is found
         if max_val_value > best_match_value_score:
             best_match_value_score = max_val_value
@@ -120,26 +149,26 @@ if __name__ == "__main__":
     # Create a separate window for the thresholded image
     # Load the binarized card images for faces and values
     face_images = {
-        'diamond': cv2.imread(os.path.join(image_folder, 'Diamonds.jpg'), 0),
-        'clubs': cv2.imread(os.path.join(image_folder, 'Clubs.jpg'), 0),
-        'hearts': cv2.imread(os.path.join(image_folder, 'Hearts.jpg'), 0),
-        'spades': cv2.imread(os.path.join(image_folder, 'Spades.jpg'), 0),
+        'diamond': cv2.imread(os.path.join(image_folder, 'diamond.jpg'), cv2.IMREAD_GRAYSCALE),
+        'clubs': cv2.imread(os.path.join(image_folder, 'clubs.jpg'), cv2.IMREAD_GRAYSCALE),
+        'hearts': cv2.imread(os.path.join(image_folder, 'hearts.jpg'), cv2.IMREAD_GRAYSCALE),
+        'spades': cv2.imread(os.path.join(image_folder, 'spades.jpg'), cv2.IMREAD_GRAYSCALE),
     }
 
     value_images = {
-        '2': cv2.imread(os.path.join(image_folder, '2.jpg'), 0),
-        '3': cv2.imread(os.path.join(image_folder, '3.jpg'), 0),
-        '4': cv2.imread(os.path.join(image_folder, '4.jpg'), 0),
-        '5': cv2.imread(os.path.join(image_folder, '5.jpg'), 0),
-        '6': cv2.imread(os.path.join(image_folder, '6.jpg'), 0),
-        '7': cv2.imread(os.path.join(image_folder, '7.jpg'), 0),
-        '8': cv2.imread(os.path.join(image_folder, '8.jpg'), 0),
-        '9': cv2.imread(os.path.join(image_folder, '9.jpg'), 0),
-        '10': cv2.imread(os.path.join(image_folder, '10.jpg'), 0),
-        'jack': cv2.imread(os.path.join(image_folder, 'jack.jpg'), 0),
-        'queen': cv2.imread(os.path.join(image_folder, 'queen.jpg'), 0),
-        'king': cv2.imread(os.path.join(image_folder, 'king.jpg'), 0),
-        'ace': cv2.imread(os.path.join(image_folder, 'ace.jpg'), 0),
+        '2': cv2.imread(os.path.join(image_folder, '2.jpg'), cv2.IMREAD_GRAYSCALE),
+        '3': cv2.imread(os.path.join(image_folder, '3.jpg'), cv2.IMREAD_GRAYSCALE),
+        '4': cv2.imread(os.path.join(image_folder, '4.jpg'), cv2.IMREAD_GRAYSCALE),
+        '5': cv2.imread(os.path.join(image_folder, '5.jpg'), cv2.IMREAD_GRAYSCALE),
+        '6': cv2.imread(os.path.join(image_folder, '6.jpg'), cv2.IMREAD_GRAYSCALE),
+        '7': cv2.imread(os.path.join(image_folder, '7.jpg'), cv2.IMREAD_GRAYSCALE),
+        '8': cv2.imread(os.path.join(image_folder, '8.jpg'), cv2.IMREAD_GRAYSCALE),
+        '9': cv2.imread(os.path.join(image_folder, '9.jpg'), cv2.IMREAD_GRAYSCALE),
+        '10': cv2.imread(os.path.join(image_folder, '10.jpg'), cv2.IMREAD_GRAYSCALE),
+        'jack': cv2.imread(os.path.join(image_folder, 'jack.jpg'), cv2.IMREAD_GRAYSCALE),
+        'queen': cv2.imread(os.path.join(image_folder, 'queen.jpg'), cv2.IMREAD_GRAYSCALE),
+        'king': cv2.imread(os.path.join(image_folder, 'king.jpg'), cv2.IMREAD_GRAYSCALE),
+        'ace': cv2.imread(os.path.join(image_folder, 'ace.jpg'), cv2.IMREAD_GRAYSCALE),
     }
 
     for i, arg in enumerate(sys.argv):
@@ -153,7 +182,7 @@ if __name__ == "__main__":
         print("Cannot open camera")
         exit()
 
-    i = 0
+    img_index = 0
     while True:
         ret, frame = cap.read()
         # frame = cv2.imread('./data/diamonds5.jpg')
@@ -164,10 +193,12 @@ if __name__ == "__main__":
 
         if got_card:
             print("GOT A CARD")
+            cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
             get_match(card)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        img_index += 1
 
     cap.release()
     cv2.destroyAllWindows()
