@@ -1,53 +1,38 @@
-class players:
-    def __init__(self,cards):
-        self.cards = cards
-        self.points = 0
-        self.amount_of_aces = 0
-        self.add_points()
+button_hit = font.render("Hit", True, WHITE)
+button_double = font.render("Double", True, WHITE)
+button_stand = font.render("Stand", True, WHITE)
 
-    def get_card(self,card):
-        self.cards.append(card)
-        self.add_points()
+# Zones des boutons
+hit_rect = button_hit.get_rect()
+double_rect = button_double.get_rect()
+stand_rect = button_stand.get_rect()
 
-    def add_points(self):
-        points = 0
-        amount_of_aces = 0
-        for card in self.cards:
-            if type(card[1]) is int:
-                points += card[1]
+# Position des boutons
+button_spacing = 30
+button_start_x = WIDTH // 2 - (button_hit.get_width() + button_spacing) * 1.5
+button_y = HEIGHT // 2
 
-            elif card[1] == 'ace':
-                amount_of_aces += 1
-                points += 11
-            else:
-                points += 10
-        self.points = points
-        self.amount_of_aces = amount_of_aces
-        self.total_points()
+hit_rect.topleft = (button_start_x, button_y)
+double_rect.topleft = (button_start_x + button_hit.get_width() + button_spacing, button_y)
+stand_rect.topleft = (button_start_x + 2 * (button_hit.get_width() + button_spacing), button_y)
 
-    def total_points(self):
-        if self.points > 21:
-            if self.amount_of_aces > 0:
-                self.points -= 10
-                self.amount_of_aces -= 1
-                self.total_points()
-
-
-    def status(self):
-        print(self.cards)
-        if self.points < 21:
-            print(self.points)
-        else:
-            print('busted')
-
-player1 = players([('harten',2),('schoppen',3)])
-player1.get_card(('klaveren',5))
-player1.get_card(('klaveren','jack'))
-
-player1.status()
-
-player2 = players([('harten',8),('schoppen','ace')])
-player2.get_card(('klaveren',5))
-player2.get_card(('klaveren','jack'))
-
-player2.status()
+buttons_visible = True
+move = None
+# after move input
+    for event in pygame.event.get():
+        if event.type == pygame.MOUSEBUTTONDOWN and buttons_visible:
+            # Vérification du clic sur l'un des boutons
+            if hit_rect.collidepoint(event.pos):
+                move = 1
+            elif double_rect.collidepoint(event.pos):
+                move = 2
+            elif stand_rect.collidepoint(event.pos):
+                move = 3
+            buttons_visible = False
+    screen.fill(GREEN)
+    if buttons_visible:
+        screen.blit(button_hit, hit_rect.topleft)
+        screen.blit(button_double, double_rect.topleft)
+        screen.blit(button_stand, stand_rect.topleft)
+    pygame.display.flip()
+    #before if move==1
