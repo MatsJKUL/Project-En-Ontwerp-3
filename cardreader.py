@@ -215,7 +215,6 @@ if __name__ == "__main__":
         got_card, card = process_frame(frame)
 
         if got_card:
-            print("GOT A CARD")
             # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
             cv2.imshow("LOL", card)
             get_match(card)
