@@ -47,8 +47,22 @@ def process_frame(frame):
             card = frame[y:y+h, x:x+w]
             card = card[0:125, 0: 100]
 
-    cv2.imshow('Card Detection', frame)
+    cv2.imshow('CARD FRAME', frame)
     return got_card, card
+
+
+def check_color_present(frame):
+
+    print("CHECK COLOR")
+    total_pixel = 0
+    red_pixel = 0
+    for row in frame:
+        for pixel in row:
+            if (pixel[2] > 200 and pixel[1] < 200 and pixel[0] < 200):
+                red_pixel += 1
+            total_pixel += 1
+
+    return red_pixel/total_pixel
 
 
 def get_match(frame):
@@ -56,8 +70,15 @@ def get_match(frame):
     if (frame.shape[0]*frame.shape[1] < 5000):
         return
 
-    cv2.imshow('CARD FRAME', card)
+    cv2.imshow('KAART', card)
     frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
+
+    color = 'black'
+
+    colorcode = check_color_present(card)
+    print(colorcode)
+    if (colorcode > 0.01):
+        color = 'red'
 
     # Convert the frame to grayscale
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -75,20 +96,18 @@ def get_match(frame):
     best_match_face_score = float('-inf')  # Initialize to negative infinity
     best_match_value_score = float('-inf')  # Initialize to negative infinity
 
-    down_width = 500
-    down_height = 500
+    down_width = 170
+    down_height = 170
     down_points = (down_width, down_height)
     face_frame = thresh_frame.copy()
-    face_frame = face_frame[10:80, 5: 75]
+    face_frame = face_frame[70:120, 20: 75]
     resized_down = cv2.resize(
-        thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
+        face_frame, down_points, interpolation=cv2.INTER_LINEAR)
 
     for face_name, face_image in face_images.items():
         # Try to match the face in the entire frame
         face_match = cv2.matchTemplate(
             resized_down, face_image, cv2.TM_CCOEFF_NORMED)
-
-        print(face_name)
 
         template = cv2.imread(f'./data/{face_name}.jpg', cv2.IMREAD_GRAYSCALE)
         w, h = template.shape[::-1]
@@ -99,11 +118,14 @@ def get_match(frame):
         bottom_right = (top_left[0] + w, top_left[1] + h)
         cv2.rectangle(resized_down, top_left, bottom_right, 255, 2)
 
-        cv2.imshow('DOWN FRAME', resized_down)
         # Update the best match for faces if a better match is found
         if max_val_face > best_match_face_score:
             best_match_face_score = max_val_face
             best_match_face = face_name
+
+    if best_match_face == 'diamonds' and color != 'red':
+        print('CONVERTED')
+        best_match_face = 'spades'
 
     down_width = 200
     down_height = 200
@@ -129,7 +151,7 @@ def get_match(frame):
         bottom_right = (top_left[0] + w, top_left[1] + h)
         cv2.rectangle(resized_down, top_left, bottom_right, 255, 2)
 
-        # cv2.imshow('DOWN FRAME', resized_down)
+        cv2.imshow('DOWN FRAME', resized_down)
         # Update the best match for values if a better match is found
         if max_val_value > best_match_value_score:
             best_match_value_score = max_val_value
@@ -195,6 +217,7 @@ if __name__ == "__main__":
         if got_card:
             print("GOT A CARD")
             # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
+            cv2.imshow("LOL", card)
             get_match(card)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
