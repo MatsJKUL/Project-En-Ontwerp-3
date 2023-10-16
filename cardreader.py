@@ -11,7 +11,6 @@ MAX_AREA = 999900000
 
 def process_frame(frame):
     # print(f"Checking for area with: {MIN_AREA} < A < {MAX_AREA}")
-    i = 0
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # adaptive threshold
@@ -19,42 +18,47 @@ def process_frame(frame):
         gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
 
     # Fill rectangular contours
-    cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = cv2.findContours(
+        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
     for c in cnts:
         cv2.drawContours(thresh, [c], -1, (255, 255, 255), -1)
 
     # Morph open
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
-    opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=4)
+    opening = cv2.morphologyEx(
+        thresh, cv2.MORPH_OPEN, kernel, iterations=4)
 
     # Draw rectangles, the 'area_treshold' value was determined empirically
     cnts = cv2.findContours(opening, cv2.RETR_EXTERNAL,
                             cv2.CHAIN_APPROX_SIMPLE)
-    # WHAT DOES THIS SHIT DO
+
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    got_card = False
+    card = frame
     for c in cnts:
         if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
+
+            got_card = True
             x, y, w, h = cv2.boundingRect(c)
             cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
                           (36, 255, 12), 3)
 
             card = frame[y:y+h, x:x+w]
-            card = card[0:120, 0:175]
-            return (1, card)
-            # cv2.imwrite(f'kaart_{i}.jpg', card)
-            # i += 1
+            card = card[0:80, 0:120]
 
-    return (0, frame)
+    cv2.imshow('Card Detection', frame)
+    return got_card, card
 
 
 def get_match(frame):
     # Apply bilateral filtering to the frame
+    cv2.imshow('CARD FRAME', card)
     frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
 
     # Convert the frame to grayscale
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
+    gray_frame = cv2.GaussianBlur(gray_frame, (5, 5), 0)
     # Apply adaptive thresholding to the grayscale frame
     thresh_frame = cv2.adaptiveThreshold(
         gray_frame, 200, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
@@ -68,10 +72,17 @@ def get_match(frame):
     best_match_face_score = float('-inf')  # Initialize to negative infinity
     best_match_value_score = float('-inf')  # Initialize to negative infinity
 
+    down_width = 70
+    down_height = 120
+    down_points = (down_width, down_height)
+    resized_down = cv2.resize(
+        thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
+
+    cv2.imshow('DOWN FRAME', resized_down)
     for face_name, face_image in face_images.items():
         # Try to match the face in the entire frame
         face_match = cv2.matchTemplate(
-            thresh_frame, face_image, cv2.TM_CCOEFF_NORMED)
+            resized_down, face_image, cv2.TM_CCOEFF_NORMED)
 
         # Find the maximum similarity score
         _, max_val_face, _, _ = cv2.minMaxLoc(face_match)
@@ -84,7 +95,7 @@ def get_match(frame):
     for value_name, value_image in value_images.items():
         # Try to match the value in the entire frame
         value_match = cv2.matchTemplate(
-            thresh_frame, value_image, cv2.TM_CCOEFF_NORMED)
+            resized_down, value_image, cv2.TM_CCOEFF_NORMED)
 
         # Find the maximum similarity score
         _, max_val_value, _, _ = cv2.minMaxLoc(value_match)
@@ -95,9 +106,10 @@ def get_match(frame):
             best_match_value = value_name
 
     # Display the result with improved readability
-    cv2.putText(frame, f"Face: {best_match_face}, Value: {best_match_value}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                (0, 255, 0), 2)
+#    cv2.putText(frame, f"Face: {best_match_face}, Value: {best_match_value}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
+#                (0, 255, 0), 2)
     print(f"Face: {best_match_face}, Value: {best_match_value}")
+    time.sleep(.05)
 
 
 # Release the webcam and close all windows
@@ -132,9 +144,10 @@ if __name__ == "__main__":
 
     for i, arg in enumerate(sys.argv):
         if i == 1:
+            print("GETCAM")
             CAMERA = arg
 
-    cap = cv2.VideoCapture(CAMERA)
+    cap = cv2.VideoCapture(2)
 
     if not cap.isOpened():
         print("Cannot open camera")
@@ -147,52 +160,10 @@ if __name__ == "__main__":
         if not ret:
             break
 
-        use_frame = frame.copy()
-        cv2.imshow('Card Detection', frame)
-
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # adaptive threshold
-        thresh = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
-
-        # Fill rectangular contours
-        cnts = cv2.findContours(
-            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-        for c in cnts:
-            cv2.drawContours(thresh, [c], -1, (255, 255, 255), -1)
-
-        # Morph open
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
-        opening = cv2.morphologyEx(
-            thresh, cv2.MORPH_OPEN, kernel, iterations=4)
-
-        # Draw rectangles, the 'area_treshold' value was determined empirically
-        cnts = cv2.findContours(opening, cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
-        # WHAT DOES THIS SHIT DO
-        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-        got_card = 0
-        for c in cnts:
-            if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
-
-                got_card = 1
-                x, y, w, h = cv2.boundingRect(c)
-                cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
-                              (36, 255, 12), 3)
-
-                card = frame[y:y+h, x:x+w]
-                card = card[0:120, 0:150]
-                i += 1
-
-#        res, card = process_frame(use_frame)
-#        if not res:
-#            continue
+        got_card, card = process_frame(frame)
 
         if got_card:
             print("GOT A CARD")
-            cv2.imshow('CARD FRAME', card)
             get_match(card)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
