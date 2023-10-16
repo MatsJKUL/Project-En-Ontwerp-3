@@ -63,6 +63,7 @@ def double(player, cards, deleted_cards):
     player.get_card(random_card_choice(cards, deleted_cards))
     # money double
 
+
 response = input("Do you want to play the game(y/n): ")
 if response == "y":
     run = True
@@ -134,7 +135,7 @@ while run:
                 )
                 if player_status[1] > 21:
                     print("You are busted !")
-                    busted_player.append(players[number-1])
+                    busted_player.append(players[number - 1])
                     run_hit = False
                 else:
                     still_hit = int(input("Hit again(1) or stand(2) ? "))
@@ -154,7 +155,7 @@ while run:
             )
             if player_status[1] > 21:
                 print("You are busted !")
-                busted_player.append(players[number-1])
+                busted_player.append(players[number - 1])
             else:
                 pass
         else:
@@ -166,7 +167,13 @@ while run:
     dealer_busted = False
     while dealer_takes_card:
         dealer_score = dealer.status()[1]
-        print("Dealer's card are", dealer.status()[0], "with a score of :", dealer_score, "points.")
+        print(
+            "Dealer's card are",
+            dealer.status()[0],
+            "with a score of :",
+            dealer_score,
+            "points.",
+        )
         if dealer_score > 21:
             print("Dealer busted. All the players won !!")
             dealer_busted = True
@@ -178,15 +185,25 @@ while run:
             dealer.get_card(random_card_choice(cards, deleted_cards))
     # Score players
     if dealer_busted == False:
-        for number in range(0,len(players)):
+        for number in range(0, len(players)):
             if players[number] in busted_player:
                 pass
             elif players[number].status()[1] > dealer_score:
-                print("Player " + str(number+1), "won with a score of", players[number].status()[1], "points.")
-            elif players[number].status()[1]==dealer_score:
+                print(
+                    "Player " + str(number + 1),
+                    "won with a score of",
+                    players[number].status()[1],
+                    "points.",
+                )
+            elif players[number].status()[1] == dealer_score:
                 print("Push. Player " + str(number + 1), "has same score as the dealer")
             else:
-                print("Player "+ str(number + 1),"lose with a score of", players[number].status()[1], "points." )
+                print(
+                    "Player " + str(number + 1),
+                    "lose with a score of",
+                    players[number].status()[1],
+                    "points.",
+                )
 
     # end of the game
 
