@@ -39,6 +39,8 @@ class Players:
         return self.cards, self.points
 
 
+
+
 colors = ["Heart", "Diamonds", "Clubs", "Spades"]
 Waarde = [2, 3, 4, 5, 6, 7, 8, 9, 10, "Jack", "Queen", "King", "Ace"]
 
@@ -121,6 +123,7 @@ while run:
         move = int(
             input("Wich move do you want to do ? Hit (1), double (2), stand(3) ")
         )
+
         if move == 1:
             run_hit = True
             while run_hit:
