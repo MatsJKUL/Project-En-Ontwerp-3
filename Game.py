@@ -19,7 +19,7 @@ class Players:
             if type(card[1]) is int:
                 points += card[1]
 
-            elif card[1] == "ace":
+            elif card[1] == "Ace":
                 amount_of_aces += 1
                 points += 11
             else:
@@ -63,11 +63,10 @@ def double(player, cards, deleted_cards):
     player.get_card(random_card_choice(cards, deleted_cards))
     # money double
 
-
 response = input("Do you want to play the game(y/n): ")
 if response == "y":
     run = True
-    number_of_player = int(input("How much players:  "))
+    number_of_player = int(input("How much players (max 7):  "))
 else:
     run = False
 while run:
@@ -107,14 +106,15 @@ while run:
             )
 
     # gives cards to the dealer
-    cards_dealer = []
-    cards_dealer.append(random_card_choice(cards, deleted_cards))
+    dealer = Players()
+    dealer.get_card(random_card_choice(cards, deleted_cards))
 
     print("Dealer receive a card, you don't know the value")
-    cards_dealer.append(random_card_choice(cards, deleted_cards))
-    print("Dealer receive another card:", cards_dealer[1])
+    dealer.get_card(random_card_choice(cards, deleted_cards))
+    print("Dealer receive another card:", dealer.status()[0][1])
 
     # ask for the move
+    busted_player = []
     for number in range(1, number_of_player + 1):
         print("Player" + str(number) + "'s", "turn")
         move = int(
@@ -134,7 +134,7 @@ while run:
                 )
                 if player_status[1] > 21:
                     print("You are busted !")
-                    players.remove(players[number - 1])
+                    busted_player.append(players[number-1])
                     run_hit = False
                 else:
                     still_hit = int(input("Hit again(1) or stand(2) ? "))
@@ -154,12 +154,39 @@ while run:
             )
             if player_status[1] > 21:
                 print("You are busted !")
-                players.remove(players[number - 1])
+                busted_player.append(players[number-1])
             else:
-                still_hit = int(input("Hit again(1) or stand(2) ? "))
-            # give cards + score with code class
+                pass
         else:
             pass
+    # delete busted players
+    # Dealer game
+    print("Dealer's turn !")
+    dealer_takes_card = True
+    dealer_busted = False
+    while dealer_takes_card:
+        dealer_score = dealer.status()[1]
+        print("Dealer's card are", dealer.status()[0], "with a score of :", dealer_score, "points.")
+        if dealer_score > 21:
+            print("Dealer busted. All the players won !!")
+            dealer_busted = True
+            dealer_takes_card = False
+        elif dealer_score >= 17:
+            dealer_takes_card = False
+        else:
+            print("Dealer takes a new card")
+            dealer.get_card(random_card_choice(cards, deleted_cards))
+    # Score players
+    if dealer_busted == False:
+        for number in range(0,len(players)):
+            if players[number] in busted_player:
+                pass
+            elif players[number].status()[1] > dealer_score:
+                print("Player " + str(number+1), "won with a score of", players[number].status()[1], "points.")
+            elif players[number].status()[1]==dealer_score:
+                print("Push. Player " + str(number + 1), "has same score as the dealer")
+            else:
+                print("Player "+ str(number + 1),"lose with a score of", players[number].status()[1], "points." )
 
     # end of the game
 
@@ -168,6 +195,6 @@ while run:
     response = input("Do you still wanna play(y/n)")
     if response == "y":
         run = True
-        number_of_player = input("How much players:  ")
+        number_of_player = int(input("How much players:  "))
     else:
         run = False
