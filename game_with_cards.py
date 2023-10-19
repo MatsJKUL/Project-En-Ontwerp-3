@@ -286,7 +286,6 @@ while running:
                 screen.blit(points, points_rect)
                 pygame.display.update()
                 clock.tick(30)
-                pygame.time.delay(500)
                 print(
                     "You have",
                     player_status[0],
@@ -331,6 +330,15 @@ while running:
                         run_hit = False
         elif move == 2:
             double(players[number], cards, deleted_cards)
+            points = font.render(str(players[number].status()[1]), True, WHITE)
+            points_rect = points.get_rect()
+            points_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 650)
+            screen.blit(card_images[players[number].status()[0][-1]], (
+            (number + 1) * WIDTH // (len(players) + 1) + (len(players[number].status()[0]) - 1) * 30 - 60, 500))
+            pygame.draw.rect(screen, background, points_rect)
+            screen.blit(points, points_rect)
+            pygame.display.update()
+            clock.tick(30)
             player_status = players[number].status()
             print(
                 "You have",
@@ -408,36 +416,25 @@ while running:
                     you_win_rect = you_win.get_rect()
                     you_win_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(you_win, you_win_rect)
+                    pygame.time.delay(500)
                     pygame.display.update()
                     clock.tick(30)
-                    print(
-                        "Player " + str(number + 1),
-                        "won with a score of",
-                        players[number].status()[1],
-                        "points.",
-                    )
                 elif players[number].status()[1] == dealer_score:
                     push = font.render("PUSH", True, WHITE)
                     push_rect = push.get_rect()
                     push_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(push, push_rect)
+                    pygame.time.delay(500)
                     pygame.display.update()
                     clock.tick(30)
-                    print("Push. Player " + str(number + 1), "has same score as the dealer")
                 else:
                     you_lose = font.render("YOU LOST", True, WHITE)
                     you_lose_rect = you_lose.get_rect()
                     you_lose_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(you_lose, you_lose_rect)
+                    pygame.time.delay(500)
                     pygame.display.update()
                     clock.tick(30)
-                    print(
-                        "Player " + str(number + 1),
-                        "lose with a score of",
-                        players[number].status()[1],
-                        "points.",
-                    )
-
     # end of the game
     # Réinsérer les cartes retirées dans le set de base
     play_again = True
