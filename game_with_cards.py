@@ -1,4 +1,9 @@
+import pygame
+import os
+import sys
 import random
+
+
 class Players:
     def __init__(self):
         self.cards = []
@@ -36,9 +41,6 @@ class Players:
     def status(self):
         return self.cards, self.points
 
-import pygame
-import sys
-import os
 
 # Initialize Pygame
 pygame.init()
@@ -53,9 +55,11 @@ card_path = 'cards/'  # Create a folder 'cards' and put card images inside
 for suit in ['h', 'd', 'c', 's']:
     for rank in range(1, 14):
         card_name = f'{suit}{rank}.png'
-        card_images[(suit, rank)] = pygame.image.load(os.path.join(card_path, card_name))
+        card_images[(suit, rank)] = pygame.image.load(
+            os.path.join(card_path, card_name))
 back = 'back'
-card_images[(back, back)] = pygame.image.load(os.path.join(card_path,f'{back}.png'))
+card_images[(back, back)] = pygame.image.load(
+    os.path.join(card_path, f'{back}.png'))
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Blackjack Cards")
@@ -92,9 +96,9 @@ again_rect = button_again.get_rect()
 stop_rect = button_stop.get_rect()
 play_rect.center = (WIDTH // 2, HEIGHT // 2)
 hit_rect.center = (50, 30)
-double_rect.center = (210,30)
-stand_rect.center = (115,30)
-split_rect.center = (260,30)
+double_rect.center = (210, 30)
+stand_rect.center = (115, 30)
+split_rect.center = (260, 30)
 again_rect.center = (WIDTH // 2 - 100, HEIGHT // 2)
 stop_rect.center = (WIDTH // 2 + 100, HEIGHT // 2)
 
@@ -125,7 +129,8 @@ while run:
     if not running:
         screen.blit(play_button, play_rect)
         # Affichage du nombre de joueurs
-        text = font.render("How many players : " + str(number_of_player), True, WHITE)
+        text = font.render("How many players : " +
+                           str(number_of_player), True, WHITE)
         text_rect = text.get_rect()
         text_rect.center = (WIDTH // 2, HEIGHT // 2 + 50)
         screen.blit(text, text_rect)
@@ -149,11 +154,10 @@ while running:
     pygame.display.update()
     clock.tick(30)
     colors = ["h", "d", "c", "s"]
-    Waarde = [1,2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+    Waarde = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
     cards = {(color, value) for color in colors for value in Waarde}
     deleted_cards = []
-
 
     def random_card_choice(cards, deleted_cards):
         random_cards = random.choice(list(cards))
@@ -161,17 +165,14 @@ while running:
         deleted_cards.append(random_cards)
         return random_cards
 
-
     def hit(player, cards, deleted_cards):
         # in class when code is done
         player.get_card(random_card_choice(cards, deleted_cards))
-
 
     def double(player, cards, deleted_cards):
         # in class when code is done
         player.get_card(random_card_choice(cards, deleted_cards))
         # money double
-
 
      # int(input("How much players (max 7):  "))
     # gives cards to the players
@@ -182,7 +183,8 @@ while running:
     Player5 = Players()
     Player6 = Players()
     Player7 = Players()
-    max_players = [Player1, Player2, Player3, Player4, Player5, Player6, Player7]
+    max_players = [Player1, Player2, Player3,
+                   Player4, Player5, Player6, Player7]
     players = []
     for i in range(1, number_of_player + 1):
         players.append(max_players[i - 1])
@@ -209,7 +211,8 @@ while running:
                 "points.",
             )
     for number in range(len(players)):
-        screen.blit(card_images[players[number].status()[0][0]], ((number+1) * WIDTH//(len(players)+1) -60, 500))
+        screen.blit(card_images[players[number].status()[0][0]], ((
+            number+1) * WIDTH//(len(players)+1) - 60, 500))
         pygame.display.update()
         clock.tick(30)
         pygame.time.delay(500)
@@ -228,7 +231,8 @@ while running:
         points = font.render(str(players[number].status()[1]), True, WHITE)
         points_rect = points.get_rect()
         points_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 650)
-        screen.blit(card_images[players[number].status()[0][1]], ((number+1) * WIDTH//(len(players)+1) + (len(players[number].status()[0])-1)*30 -60, 500))
+        screen.blit(card_images[players[number].status()[0][1]], ((
+            number+1) * WIDTH//(len(players)+1) + (len(players[number].status()[0])-1)*30 - 60, 500))
         pygame.draw.rect(screen, background, points_rect)
         screen.blit(points, points_rect)
         pygame.display.update()
@@ -247,7 +251,7 @@ while running:
     for number in range(len(players)):
         buttons_visible = True
         move = None
-        turn = font.render("YOUR TURN", True, (50,50,50))
+        turn = font.render("YOUR TURN", True, (50, 50, 50))
         turn_rect = turn.get_rect()
         turn_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 450)
         screen.blit(turn, turn_rect)
@@ -277,15 +281,19 @@ while running:
             run_hit = True
             while run_hit:
                 hit(players[number], cards, deleted_cards)
-                points = font.render(str(players[number].status()[1]), True, WHITE)
+                points = font.render(
+                    str(players[number].status()[1]), True, WHITE)
                 points_rect = points.get_rect()
-                points_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 650)
+                points_rect.center = (
+                    (number + 1) * WIDTH // (len(players) + 1), 650)
                 player_status = players[number].status()
-                screen.blit(card_images[players[number].status()[0][-1]],((number+1) * WIDTH //(len(players)+1) + (len(players[number].status()[0]) - 1) * 30 -60, 500))
+                screen.blit(card_images[players[number].status()[0][-1]], ((number+1) * WIDTH // (
+                    len(players)+1) + (len(players[number].status()[0]) - 1) * 30 - 60, 500))
                 pygame.draw.rect(screen, background, points_rect)
                 screen.blit(points, points_rect)
                 pygame.display.update()
                 clock.tick(30)
+                pygame.time.delay(500)
                 print(
                     "You have",
                     player_status[0],
@@ -295,9 +303,10 @@ while running:
                 )
                 if player_status[1] > 21:
                     print("You are busted !")
-                    busted = font.render("BUSTED", True, (255,50,50))
+                    busted = font.render("BUSTED", True, (255, 50, 50))
                     busted_rect = busted.get_rect()
-                    busted_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
+                    busted_rect.center = (
+                        (number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(busted, busted_rect)
                     pygame.display.update()
                     clock.tick(30)
@@ -319,8 +328,10 @@ while running:
                                 elif stand_rect.collidepoint(event.pos):
                                     move = 3
                                 pygame.draw.rect(screen, background, hit_rect)
-                                pygame.draw.rect(screen, background, double_rect)
-                                pygame.draw.rect(screen, background, stand_rect)
+                                pygame.draw.rect(
+                                    screen, background, double_rect)
+                                pygame.draw.rect(
+                                    screen, background, stand_rect)
                                 pygame.display.update()
                                 clock.tick(30)
                                 buttons_visible = False
@@ -330,15 +341,6 @@ while running:
                         run_hit = False
         elif move == 2:
             double(players[number], cards, deleted_cards)
-            points = font.render(str(players[number].status()[1]), True, WHITE)
-            points_rect = points.get_rect()
-            points_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 650)
-            screen.blit(card_images[players[number].status()[0][-1]], (
-            (number + 1) * WIDTH // (len(players) + 1) + (len(players[number].status()[0]) - 1) * 30 - 60, 500))
-            pygame.draw.rect(screen, background, points_rect)
-            screen.blit(points, points_rect)
-            pygame.display.update()
-            clock.tick(30)
             player_status = players[number].status()
             print(
                 "You have",
@@ -348,9 +350,10 @@ while running:
                 "points.",
             )
             if player_status[1] > 21:
-                busted = font.render("BUSTED", True, (255,50, 50))
+                busted = font.render("BUSTED", True, (255, 50, 50))
                 busted_rect = busted.get_rect()
-                busted_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
+                busted_rect.center = (
+                    (number + 1) * WIDTH // (len(players) + 1), 680)
                 screen.blit(busted, busted_rect)
                 pygame.display.update()
                 clock.tick(30)
@@ -385,7 +388,7 @@ while running:
         )
         if dealer_score > 21:
             print("Dealer busted. All the players won !!")
-            busted = font.render("BUSTED", True, (255,50, 50))
+            busted = font.render("BUSTED", True, (255, 50, 50))
             busted_rect = busted.get_rect()
             busted_rect.center = (600, 210)
             screen.blit(busted, busted_rect)
@@ -398,7 +401,8 @@ while running:
         else:
             print("Dealer takes a new card")
             dealer.get_card(random_card_choice(cards, deleted_cards))
-            screen.blit(card_images[dealer.status()[0][-1]], (550 + (len(dealer.status()[0]) - 1) * 30, 30))
+            screen.blit(card_images[dealer.status()[0][-1]],
+                        (550 + (len(dealer.status()[0]) - 1) * 30, 30))
             points = font.render(str(dealer.status()[1]), True, WHITE)
             points_rect = points.get_rect()
             points_rect.center = (600, 180)
@@ -414,27 +418,42 @@ while running:
                 elif players[number].status()[1] > dealer_score:
                     you_win = font.render("YOU WON", True, WHITE)
                     you_win_rect = you_win.get_rect()
-                    you_win_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
+                    you_win_rect.center = (
+                        (number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(you_win, you_win_rect)
-                    pygame.time.delay(500)
                     pygame.display.update()
                     clock.tick(30)
+                    print(
+                        "Player " + str(number + 1),
+                        "won with a score of",
+                        players[number].status()[1],
+                        "points.",
+                    )
                 elif players[number].status()[1] == dealer_score:
                     push = font.render("PUSH", True, WHITE)
                     push_rect = push.get_rect()
-                    push_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
+                    push_rect.center = (
+                        (number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(push, push_rect)
-                    pygame.time.delay(500)
                     pygame.display.update()
                     clock.tick(30)
+                    print("Push. Player " + str(number + 1),
+                          "has same score as the dealer")
                 else:
                     you_lose = font.render("YOU LOST", True, WHITE)
                     you_lose_rect = you_lose.get_rect()
-                    you_lose_rect.center = ((number + 1) * WIDTH // (len(players) + 1), 680)
+                    you_lose_rect.center = (
+                        (number + 1) * WIDTH // (len(players) + 1), 680)
                     screen.blit(you_lose, you_lose_rect)
-                    pygame.time.delay(500)
                     pygame.display.update()
                     clock.tick(30)
+                    print(
+                        "Player " + str(number + 1),
+                        "lose with a score of",
+                        players[number].status()[1],
+                        "points.",
+                    )
+
     # end of the game
     # Réinsérer les cartes retirées dans le set de base
     play_again = True
