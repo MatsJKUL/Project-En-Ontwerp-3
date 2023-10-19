@@ -6,12 +6,13 @@ import sys
 
 CAMERA = 0
 MIN_AREA = 4000
-MAX_AREA = 300000
+MAX_AREA = 3000000
+SHOW_FRAME = 1
 
 
 class CardDetector():
     def __init__(self):
-        pass
+        self.load_images()
 
     def load_images(self):
         self.face_images = {
@@ -37,20 +38,20 @@ class CardDetector():
             'ace': cv2.imread(os.path.join(image_folder, 'ace.jpg'), cv2.IMREAD_GRAYSCALE),
         }
 
-    def process_frame(self, frame):
-        # print(f"Checking for area with: {MIN_AREA} < A < {MAX_AREA}")
+    def process_frame(self, frame, show_frame=0):
+        #    # print(f"Checking for area with: {MIN_AREA} < A < {MAX_AREA}")
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # adaptive threshold
         thresh = cv2.adaptiveThreshold(
             gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
 
-        # Fill rectangular contours
-#        cnts = cv2.findContours(
-#            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-#        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
-#        for c in cnts:
-#            cv2.drawContours(thresh, [c], -1, (255, 255, 255), -1)
+        cnts = cv2.findContours(
+            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+
+        for c in cnts:
+            cv2.drawContours(thresh, [c], -1, (255, 255, 255), -1)
 
         # Morph open
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 9))
@@ -66,16 +67,32 @@ class CardDetector():
         card = frame
         for c in cnts:
             if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
-
                 got_card = True
+                print("GOT CARD")
                 x, y, w, h = cv2.boundingRect(c)
-                cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
-                              (36, 255, 12), 3)
+#                cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
+# (36, 255, 12), 3)
 
+                cv2.drawContours(frame, [c], -1, (36, 255, 12), 4)
+
+                a = cv2.contourArea(c)
+                sh = 150000/a
+                sw = 100000/a
+                h = int(h/sh)
+                w = int(w/sw)
                 card = frame[y:y+h, x:x+w]
                 card = card[0:125, 0: 100]
 
-        cv2.imshow('CARD FRAME', frame)
+                down_width = 75
+                down_height = 125
+                down_points = (down_width, down_height)
+
+                card = cv2.resize(
+                    card, down_points, interpolation=cv2.INTER_CUBIC)
+
+        if show_frame:
+            cv2.imshow('CARD FRAME', frame)
+
         return got_card, card
 
     def check_color_present(self, frame):
@@ -89,19 +106,104 @@ class CardDetector():
 
         return red_pixel/total_pixel
 
+    def match_face(self, thresh_frame, color, dp_match=0):
+        bmf = None
+        bmf_score = float('-inf')
+
+        down_width = 170
+        down_height = 170
+        down_points = (down_width, down_height)
+
+        face_frame = thresh_frame.copy()
+        face_frame = face_frame[70:120, 20:75]
+        resized_down = cv2.resize(
+            face_frame, down_points, interpolation=cv2.INTER_LINEAR)
+
+        for face_name, face_image in self.face_images.items():
+            face_match = cv2.matchTemplate(
+                resized_down, face_image, cv2.TM_CCOEFF_NORMED)
+
+            _, max_val_face, _, max_loc = cv2.minMaxLoc(face_match)
+
+            template = cv2.imread(
+                f'./data/{face_name}.jpg', cv2.IMREAD_GRAYSCALE)
+
+            if dp_match:
+                self.display_match(resized_down, template, max_loc)
+
+            if max_val_face > bmf_score:
+                bmf_score = max_val_face
+                bmf = face_name
+
+        bmf = self.post_process_face(bmf, color)
+
+        return bmf
+
+    def post_process_face(self, bmf, color):
+        if bmf == 'diamonds' and color != 'red':
+            bmf = 'spades'
+
+        if color == 'red' and (bmf == 'spades' or bmf == 'clubs'):
+            print("Didn't find a good color")
+        elif color == 'black' and (bmf == 'diamonds' or bmf == 'hearts'):
+            print("Found black but red face")
+
+        return bmf
+
+    def match_value(self, thresh_frame, dp_match=0):
+        # thresh_frame is the original frame from the top left of the card
+        # when dp_match is true we display the matches
+        bmv = None
+        bmv_score = float('-inf')
+
+        down_width = 200
+        down_height = 200
+        down_points = (down_width, down_height)
+        thresh_frame = thresh_frame[10:80, 5: 75]
+        resized_down = cv2.resize(
+            thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
+
+        for value_name, value_image in self.value_images.items():
+            value_match = cv2.matchTemplate(
+                resized_down, value_image, cv2.TM_CCOEFF_NORMED)
+
+            _, max_val_value, _, max_loc = cv2.minMaxLoc(value_match)
+
+            # Can we remove this line
+            template = cv2.imread(
+                f'./data/{value_name}.jpg', cv2.IMREAD_GRAYSCALE)
+
+            if dp_match:
+                self.display_match(resized_down, template, max_loc)
+
+            if max_val_value > bmv_score:
+                bmv_score = max_val_value
+                bmv = value_name
+
+        return bmv
+
+    def display_match(self, frame, template, max_loc):
+        w, h = template.shape[::-1]
+        top_left = max_loc
+
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+        cv2.rectangle(frame, top_left, bottom_right, 255, 2)
+
+        cv2.imshow('Matched Value Frame', frame)
+
     def get_match(self, frame):
-        # Apply bilateral filtering to the frame
+        color = 'black'
+
+        colorcode = self.check_color_present(frame)
+
+        if (colorcode > 0.01):
+            print("RED")
+            color = 'red'
+
         if (frame.shape[0]*frame.shape[1] < 5000):
             return
 
-        cv2.imshow('KAART', card)
         frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
-
-        color = 'black'
-
-        colorcode = self.check_color_present(card)
-        if (colorcode > 0.01):
-            color = 'red'
 
         # Convert the frame to grayscale
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -113,85 +215,16 @@ class CardDetector():
         # Expand the black background to cover the whole top of the frame
         frame[0:60, :] = (0, 0, 0)
 
-        # Loop through the face and value images to find matches
-        best_match_face = None
-        best_match_value = None
-        # Initialize to negative infinity
-        best_match_face_score = float('-inf')
-        # Initialize to negative infinity
-        best_match_value_score = float('-inf')
-
-        down_width = 170
-        down_height = 170
-        down_points = (down_width, down_height)
-        face_frame = thresh_frame.copy()
-        face_frame = face_frame[70:120, 20: 75]
-        resized_down = cv2.resize(
-            face_frame, down_points, interpolation=cv2.INTER_LINEAR)
-
-        for face_name, face_image in self.face_images.items():
-            # Try to match the face in the entire frame
-            face_match = cv2.matchTemplate(
-                resized_down, face_image, cv2.TM_CCOEFF_NORMED)
-
-            template = cv2.imread(
-                f'./data/{face_name}.jpg', cv2.IMREAD_GRAYSCALE)
-            w, h = template.shape[::-1]
-            # Find the maximum similarity score
-            _, max_val_face, _, max_loc = cv2.minMaxLoc(face_match)
-            top_left = max_loc
-
-            bottom_right = (top_left[0] + w, top_left[1] + h)
-            cv2.rectangle(resized_down, top_left, bottom_right, 255, 2)
-
-            # Update the best match for faces if a better match is found
-            if max_val_face > best_match_face_score:
-                best_match_face_score = max_val_face
-                best_match_face = face_name
-
-        if best_match_face == 'diamonds' and color != 'red':
-            print('CONVERTED')
-            best_match_face = 'spades'
-
-        down_width = 200
-        down_height = 200
-        down_points = (down_width, down_height)
-        thresh_frame = thresh_frame[10:80, 5: 75]
-        resized_down = cv2.resize(
-            thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
-
-        for value_name, value_image in self.value_images.items():
-            # Try to match the value in the entire frame
-            value_match = cv2.matchTemplate(
-                resized_down, value_image, cv2.TM_CCOEFF_NORMED)
-
-            # Find the maximum similarity score
-            _, max_val_value, _, max_loc = cv2.minMaxLoc(value_match)
-
-            template = cv2.imread(
-                f'./data/{value_name}.jpg', cv2.IMREAD_GRAYSCALE)
-            w, h = template.shape[::-1]
-            # Find the maximum similarity score
-            _, max_val_face, _, max_loc = cv2.minMaxLoc(value_match)
-            top_left = max_loc
-
-            bottom_right = (top_left[0] + w, top_left[1] + h)
-            cv2.rectangle(resized_down, top_left, bottom_right, 255, 2)
-
-            cv2.imshow('DOWN FRAME', resized_down)
-            # Update the best match for values if a better match is found
-            if max_val_value > best_match_value_score:
-                best_match_value_score = max_val_value
-                best_match_value = value_name
+        best_match_face = self.match_face(thresh_frame, color, 1)
+        best_match_value = self.match_value(thresh_frame, 1)
 
         # Display the result with improved readability
-#    cv2.putText(frame, f"Face: {best_match_face}, Value: {best_match_value}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-#                (0, 255, 0), 2)
+        # cv2.putText(frame, f"Face: {best_match_face}, Value: {best_match_value}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
+        # (0, 255, 0), 2)
         print(f"Face: {best_match_face}, Value: {best_match_value}")
         time.sleep(.05)
 
 
-    # Release the webcam and close all windows
 if __name__ == "__main__":
     image_folder = os.path.join(os.path.dirname(
         os.path.abspath(__file__)), "data")
@@ -208,18 +241,19 @@ if __name__ == "__main__":
         exit()
 
     img_index = 0
+    card_class = CardDetector()
     while True:
+
         ret, frame = cap.read()
         # frame = cv2.imread('./data/diamonds5.jpg')
         if not ret:
             break
 
-        got_card, card = process_frame(frame)
+        got_card, card = card_class.process_frame(frame, SHOW_FRAME)
 
         if got_card:
             # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
-            cv2.imshow("LOL", card)
-            get_match(card)
+            card_class.get_match(card)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
