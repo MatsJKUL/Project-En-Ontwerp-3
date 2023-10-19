@@ -155,12 +155,16 @@ while run:
             split_move = input("Do you want to split (y/n)?")
             if split_move=="y":
                 players[number-1].split()
+                players[number-1].get_card(random_card_choice(cards,deleted_cards),0)
+                print("first hand:", players[number-1].status()[0][0], "points:",players[number-1].status()[0][1])
+                players[number-1].get_card(random_card_choice(cards,deleted_cards),1)
+                print("second hand:", players[number - 1].status()[1][0], "points:", players[number - 1].status()[1][1])
             else:
                 pass
         for hand_index in range(len(players[number-1].status())):
             hand = players[number-1].status()[hand_index]
             if hand_index > 0:
-                print(str(hand_index) + "de hand : ")
+                print(str(hand_index + 1) + "de hand : ")
             print("Your cards:",players[number-1].status()[hand_index][0],"and points:",players[number-1].status()[hand_index][1] )
             move = int(
                 input("Wich move do you want to do ? Hit (1), double (2), stand(3) ")
@@ -210,10 +214,10 @@ while run:
     dealer_takes_card = True
     dealer_busted = False
     while dealer_takes_card:
-        dealer_score = dealer.status()[1]
+        dealer_score = dealer.status()[0][1]
         print(
             "Dealer's card are",
-            dealer.status()[0],
+            dealer.status()[0][0],
             "with a score of :",
             dealer_score,
             "points.",
@@ -230,12 +234,15 @@ while run:
     # Score players
     if dealer_busted == False:
         for number in range(0, len(players)):
-            for hand_index in range(len(players[number-1].status())):
-                hand = players[number - 1].status()[hand_index]
+            for hand_index in range(len(players[number].status())):
+                hand = players[number].status()[hand_index]
                 if hand_index > 0:
-                    print(str(hand_index) + "de hand : ")
+                    print(str(hand_index + 1) + "de hand : ")
                 if players[number] in busted_player:
-                    pass
+                    if hand_index > 0:
+                        print("Second hand busted")
+                    else:
+                        print("Player" + str(number + 1),"busted")
                 elif players[number].status()[hand_index][1] > dealer_score:
                     print(
                         "Player " + str(number + 1),
