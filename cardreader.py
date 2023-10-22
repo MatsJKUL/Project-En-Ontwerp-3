@@ -5,37 +5,40 @@ import time
 import sys
 
 CAMERA = 0
-MIN_AREA = 4000
+MIN_AREA = 50000
 MAX_AREA = 3000000
 SHOW_FRAME = 1
 
 
 class CardDetector():
     def __init__(self):
+        self.image_folder = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), "data")
+
         self.load_images()
 
     def load_images(self):
         self.face_images = {
-            'diamond': cv2.imread(os.path.join(image_folder, 'diamond.jpg'), cv2.IMREAD_GRAYSCALE),
-            'clubs': cv2.imread(os.path.join(image_folder, 'clubs.jpg'), cv2.IMREAD_GRAYSCALE),
-            'hearts': cv2.imread(os.path.join(image_folder, 'hearts.jpg'), cv2.IMREAD_GRAYSCALE),
-            'spades': cv2.imread(os.path.join(image_folder, 'spades.jpg'), cv2.IMREAD_GRAYSCALE),
+            'diamonds': cv2.imread(os.path.join(self.image_folder, 'diamond.jpg'), cv2.IMREAD_GRAYSCALE),
+            'clubs': cv2.imread(os.path.join(self.image_folder, 'clubs.jpg'), cv2.IMREAD_GRAYSCALE),
+            'hearts': cv2.imread(os.path.join(self.image_folder, 'hearts.jpg'), cv2.IMREAD_GRAYSCALE),
+            'spades': cv2.imread(os.path.join(self.image_folder, 'spades.jpg'), cv2.IMREAD_GRAYSCALE),
         }
 
         self.value_images = {
-            '2': cv2.imread(os.path.join(image_folder, '2.jpg'), cv2.IMREAD_GRAYSCALE),
-            '3': cv2.imread(os.path.join(image_folder, '3.jpg'), cv2.IMREAD_GRAYSCALE),
-            '4': cv2.imread(os.path.join(image_folder, '4.jpg'), cv2.IMREAD_GRAYSCALE),
-            '5': cv2.imread(os.path.join(image_folder, '5.jpg'), cv2.IMREAD_GRAYSCALE),
-            '6': cv2.imread(os.path.join(image_folder, '6.jpg'), cv2.IMREAD_GRAYSCALE),
-            '7': cv2.imread(os.path.join(image_folder, '7.jpg'), cv2.IMREAD_GRAYSCALE),
-            '8': cv2.imread(os.path.join(image_folder, '8.jpg'), cv2.IMREAD_GRAYSCALE),
-            '9': cv2.imread(os.path.join(image_folder, '9.jpg'), cv2.IMREAD_GRAYSCALE),
-            '10': cv2.imread(os.path.join(image_folder, '10.jpg'), cv2.IMREAD_GRAYSCALE),
-            'jack': cv2.imread(os.path.join(image_folder, 'jack.jpg'), cv2.IMREAD_GRAYSCALE),
-            'queen': cv2.imread(os.path.join(image_folder, 'queen.jpg'), cv2.IMREAD_GRAYSCALE),
-            'king': cv2.imread(os.path.join(image_folder, 'king.jpg'), cv2.IMREAD_GRAYSCALE),
-            'ace': cv2.imread(os.path.join(image_folder, 'ace.jpg'), cv2.IMREAD_GRAYSCALE),
+            '2': cv2.imread(os.path.join(self.image_folder, '2.jpg'), cv2.IMREAD_GRAYSCALE),
+            '3': cv2.imread(os.path.join(self.image_folder, '3.jpg'), cv2.IMREAD_GRAYSCALE),
+            '4': cv2.imread(os.path.join(self.image_folder, '4.jpg'), cv2.IMREAD_GRAYSCALE),
+            '5': cv2.imread(os.path.join(self.image_folder, '5.jpg'), cv2.IMREAD_GRAYSCALE),
+            '6': cv2.imread(os.path.join(self.image_folder, '6.jpg'), cv2.IMREAD_GRAYSCALE),
+            '7': cv2.imread(os.path.join(self.image_folder, '7.jpg'), cv2.IMREAD_GRAYSCALE),
+            '8': cv2.imread(os.path.join(self.image_folder, '8.jpg'), cv2.IMREAD_GRAYSCALE),
+            '9': cv2.imread(os.path.join(self.image_folder, '9.jpg'), cv2.IMREAD_GRAYSCALE),
+            '1': cv2.imread(os.path.join(self.image_folder, '10.jpg'), cv2.IMREAD_GRAYSCALE),
+            'J': cv2.imread(os.path.join(self.image_folder, 'jack.jpg'), cv2.IMREAD_GRAYSCALE),
+            'Q': cv2.imread(os.path.join(self.image_folder, 'queen.jpg'), cv2.IMREAD_GRAYSCALE),
+            'K': cv2.imread(os.path.join(self.image_folder, 'king.jpg'), cv2.IMREAD_GRAYSCALE),
+            'A': cv2.imread(os.path.join(self.image_folder, 'ace.jpg'), cv2.IMREAD_GRAYSCALE),
         }
 
     def process_frame(self, frame, show_frame=0):
@@ -48,6 +51,7 @@ class CardDetector():
 
         cnts = cv2.findContours(
             thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
         cnts = cnts[0] if len(cnts) == 2 else cnts[1]
 
         for c in cnts:
@@ -68,27 +72,19 @@ class CardDetector():
         for c in cnts:
             if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
                 got_card = True
-                print("GOT CARD")
                 x, y, w, h = cv2.boundingRect(c)
-#                cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
-# (36, 255, 12), 3)
-
-                cv2.drawContours(frame, [c], -1, (36, 255, 12), 4)
+                cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
+                              (36, 255, 12), 3)
 
                 a = cv2.contourArea(c)
-                sh = 150000/a
-                sw = 100000/a
+                sh = 200000/a
+                sw = 150000/a
                 h = int(h/sh)
                 w = int(w/sw)
                 card = frame[y:y+h, x:x+w]
                 card = card[0:125, 0: 100]
 
-                down_width = 75
-                down_height = 125
-                down_points = (down_width, down_height)
-
-                card = cv2.resize(
-                    card, down_points, interpolation=cv2.INTER_CUBIC)
+                cv2.imshow("card", card)
 
         if show_frame:
             cv2.imshow('CARD FRAME', frame)
@@ -119,21 +115,23 @@ class CardDetector():
         resized_down = cv2.resize(
             face_frame, down_points, interpolation=cv2.INTER_LINEAR)
 
+        best_max_loc = None
+        template = None
+
         for face_name, face_image in self.face_images.items():
             face_match = cv2.matchTemplate(
                 resized_down, face_image, cv2.TM_CCOEFF_NORMED)
 
             _, max_val_face, _, max_loc = cv2.minMaxLoc(face_match)
 
-            template = cv2.imread(
-                f'./data/{face_name}.jpg', cv2.IMREAD_GRAYSCALE)
-
-            if dp_match:
-                self.display_match(resized_down, template, max_loc)
-
             if max_val_face > bmf_score:
+                template = face_image
+                best_max_loc = max_loc
                 bmf_score = max_val_face
                 bmf = face_name
+
+        if dp_match:
+            self.display_match(resized_down, template, best_max_loc)
 
         bmf = self.post_process_face(bmf, color)
 
@@ -144,9 +142,11 @@ class CardDetector():
             bmf = 'spades'
 
         if color == 'red' and (bmf == 'spades' or bmf == 'clubs'):
-            print("Didn't find a good color")
+            pass
+            # print("Didn't find a good color")
         elif color == 'black' and (bmf == 'diamonds' or bmf == 'hearts'):
-            print("Found black but red face")
+            pass
+            # print("Found black but red face")
 
         return bmf
 
@@ -162,6 +162,8 @@ class CardDetector():
         thresh_frame = thresh_frame[10:80, 5: 75]
         resized_down = cv2.resize(
             thresh_frame, down_points, interpolation=cv2.INTER_LINEAR)
+        max_val = None
+        template = None
 
         for value_name, value_image in self.value_images.items():
             value_match = cv2.matchTemplate(
@@ -170,15 +172,15 @@ class CardDetector():
             _, max_val_value, _, max_loc = cv2.minMaxLoc(value_match)
 
             # Can we remove this line
-            template = cv2.imread(
-                f'./data/{value_name}.jpg', cv2.IMREAD_GRAYSCALE)
-
-            if dp_match:
-                self.display_match(resized_down, template, max_loc)
 
             if max_val_value > bmv_score:
+                template = value_image
                 bmv_score = max_val_value
                 bmv = value_name
+                max_val = max_loc
+
+        if dp_match:
+            self.display_match(resized_down, template, max_val)
 
         return bmv
 
@@ -189,7 +191,7 @@ class CardDetector():
         bottom_right = (top_left[0] + w, top_left[1] + h)
         cv2.rectangle(frame, top_left, bottom_right, 255, 2)
 
-        cv2.imshow('Matched Value Frame', frame)
+        # cv2.imshow('Matched Value Frame', frame)
 
     def get_match(self, frame):
         color = 'black'
@@ -197,7 +199,6 @@ class CardDetector():
         colorcode = self.check_color_present(frame)
 
         if (colorcode > 0.01):
-            print("RED")
             color = 'red'
 
         if (frame.shape[0]*frame.shape[1] < 5000):
@@ -216,16 +217,13 @@ class CardDetector():
         frame[0:60, :] = (0, 0, 0)
 
         best_match_face = self.match_face(thresh_frame, color, 1)
-        best_match_value = self.match_value(thresh_frame, 1)
+        best_match_value = self.match_value(thresh_frame)
+        print(f"{best_match_face}, {best_match_value}")
 
-        # Display the result with improved readability
-        # cv2.putText(frame, f"Face: {best_match_face}, Value: {best_match_value}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-        # (0, 255, 0), 2)
-        print(f"Face: {best_match_face}, Value: {best_match_value}")
-        time.sleep(.05)
+        return best_match_face, best_match_value
 
 
-if __name__ == "__main__":
+def main():
     image_folder = os.path.join(os.path.dirname(
         os.path.abspath(__file__)), "data")
 
@@ -242,6 +240,10 @@ if __name__ == "__main__":
 
     img_index = 0
     card_class = CardDetector()
+
+    score_face_dict = {}
+    score_value_dict = {}
+
     while True:
 
         ret, frame = cap.read()
@@ -253,11 +255,124 @@ if __name__ == "__main__":
 
         if got_card:
             # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
-            card_class.get_match(card)
+            face, value = card_class.get_match(card)
+            if face not in score_face_dict:
+                score_face_dict[face] = 0
+
+            if value not in score_value_dict:
+                score_value_dict[value] = 0
+
+            score_face_dict[face] += 1
+            score_value_dict[value] += 1
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        img_index += 1
 
+        img_index += 1
+    max_value = 0
+    max_face = 0
+    ff = 0
+    fv = 0
+
+    for key in score_face_dict:
+        if not ff:
+            max_face = key
+            ff = 1
+        if score_face_dict[key] > score_face_dict[max_face] and ff:
+            max_face = key
+
+    for key in score_value_dict:
+        if not fv:
+            max_value = key
+            fv = 1
+
+        if score_value_dict[key] > score_value_dict[max_value] and fv:
+            max_value = key
+
+    print("END RESULT", max_face, max_value)
     cap.release()
     cv2.destroyAllWindows()
+
+
+def test_images():
+    test = 10
+    correct = 0
+    wrong = 0
+
+    for p in os.listdir("images"):
+        card_class = CardDetector()
+        score_face_dict = {}
+        score_value_dict = {}
+        if os.path.isfile("images/" + str(p)):
+            img = cv2.imread("images/" + str(p), cv2.IMREAD_COLOR)
+
+            for i in range(test):
+                cimg = img.copy()
+
+                down_width = 480
+                down_height = 640
+                down_points = (down_width, down_height)
+
+                cimg = cv2.resize(
+                    cimg, down_points, interpolation=cv2.INTER_LINEAR)
+
+                got_card, card = card_class.process_frame(cimg, 1)
+
+                if got_card:
+                    face, value = card_class.get_match(card)
+                    if face not in score_face_dict:
+                        score_face_dict[face] = 0
+
+                    if value not in score_value_dict:
+                        score_value_dict[value] = 0
+
+                    score_face_dict[face] += 1
+                    score_value_dict[value] += 1
+
+            max_value = 0
+            max_face = 0
+            ff = 0
+            fv = 0
+
+            for key in score_face_dict:
+                if not ff:
+                    max_face = key
+                    ff = 1
+                if score_face_dict[key] > score_face_dict[max_face] and ff:
+                    max_face = key
+
+            for key in score_value_dict:
+                if not fv:
+                    max_value = key
+                    fv = 1
+
+                if score_value_dict[key] > score_value_dict[max_value] and fv:
+                    max_value = key
+
+            face, value = decode_img_file_name(p)
+            print(f"{face} == {max_face}, {value} == {max_value}")
+            if (face == max_face and max_value == value):
+                print("CORRECT")
+                correct += 1
+            else:
+                print("WRONG")
+                wrong += 1
+                time.sleep(5)
+            cv2.destroyAllWindows()
+
+        print(f"CORRECT: {correct}, WRONG: {wrong}")
+
+
+def decode_img_file_name(n):
+    face = ''
+    for i, c in enumerate(n):
+        if c == '_':
+            value = n[i+1]
+            break
+
+        face += c
+
+    return face.lower(), value
+
+
+main()
