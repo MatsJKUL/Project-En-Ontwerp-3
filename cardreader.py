@@ -41,13 +41,16 @@ class CardDetector():
             'A': cv2.imread(os.path.join(self.image_folder, 'ace.jpg'), cv2.IMREAD_GRAYSCALE),
         }
 
-    def process_frame(self, frame, show_frame=0):
+    def process_frame(self, frame, show_frame=0, live=1):
         #    # print(f"Checking for area with: {MIN_AREA} < A < {MAX_AREA}")
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # adaptive threshold
-        thresh = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
+        if not live:
+            thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+        else:
+            thresh = cv2.adaptiveThreshold(
+                gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 51, 9)
 
         cnts = cv2.findContours(
             thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -84,10 +87,11 @@ class CardDetector():
                 card = frame[y:y+h, x:x+w]
                 card = card[0:125, 0: 100]
 
-                cv2.imshow("card", card)
+                # cv2.imshow("card", card)
 
         if show_frame:
-            cv2.imshow('CARD FRAME', frame)
+            # cv2.imshow('CARD FRAME', frame)
+            pass
 
         return got_card, card
 
@@ -218,19 +222,15 @@ class CardDetector():
 
         best_match_face = self.match_face(thresh_frame, color, 1)
         best_match_value = self.match_value(thresh_frame)
-        print(f"{best_match_face}, {best_match_value}")
+        # print(f"{best_match_face}, {best_match_value}")
 
         return best_match_face, best_match_value
 
 
 def main():
-    image_folder = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), "data")
-
     for i, arg in enumerate(sys.argv):
         if i == 1:
             print("GETCAM")
-            CAMERA = arg
 
     cap = cv2.VideoCapture(2)
 
@@ -352,12 +352,9 @@ def test_images():
             face, value = decode_img_file_name(p)
             print(f"{face} == {max_face}, {value} == {max_value}")
             if (face == max_face and max_value == value):
-                print("CORRECT")
                 correct += 1
             else:
-                print("WRONG")
                 wrong += 1
-                time.sleep(5)
             cv2.destroyAllWindows()
 
         print(f"CORRECT: {correct}, WRONG: {wrong}")
@@ -375,4 +372,4 @@ def decode_img_file_name(n):
     return face.lower(), value
 
 
-main()
+test_images()
