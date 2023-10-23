@@ -1,7 +1,11 @@
 import cv2
 import os
-import time
 import sys
+import numpy as np
+import random
+from scipy import ndimage
+
+# rotation angle in degree
 
 CAMERA = 0
 MIN_AREA = 50000
@@ -74,11 +78,6 @@ class CardDetector():
                 cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
                               (36, 255, 12), 3)
 
-               # a = cv2.contourArea(c)
-#                sh = 200000/a
-#                sw = 150000/a
-#                h = int(h/sh)
-#                w = int(w/sw)
                 cardit = frame[y:y+h, x:x+w]
 
                 s = 5
@@ -169,8 +168,6 @@ class CardDetector():
         return bmf
 
     def match_value(self, thresh_frame, dp_match=0):
-        # thresh_frame is the original frame from the top left of the card
-        # when dp_match is true we display the matches
         bmv = None
         bmv_score = float('-inf')
 
@@ -265,7 +262,7 @@ def main():
         if not ret:
             break
 
-        got_card, card = card_class.process_frame(frame, SHOW_FRAME)
+        got_card, card = card_class.process_frame(frame, 0, SHOW_FRAME)
 
         if got_card:
             # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
@@ -276,6 +273,8 @@ def main():
             if value not in score_value_dict:
                 score_value_dict[value] = 0
 
+            print(face, value)
+
             score_face_dict[face] += 1
             score_value_dict[value] += 1
 
@@ -283,6 +282,18 @@ def main():
             break
 
         img_index += 1
+        max_face, max_value = get_max_dict(score_face_dict, score_value_dict)
+
+        print("INTER RESULT", max_face, max_value)
+
+    max_face, max_value = get_max_dict(score_face_dict, score_value_dict)
+
+    print("END RESULT", max_face, max_value)
+    cap.release()
+    cv2.destroyAllWindows()
+
+
+def get_max_dict(score_face_dict, score_value_dict):
     max_value = 0
     max_face = 0
     ff = 0
@@ -303,23 +314,21 @@ def main():
         if score_value_dict[key] > score_value_dict[max_value] and fv:
             max_value = key
 
-    print("END RESULT", max_face, max_value)
-    cap.release()
-    cv2.destroyAllWindows()
+    return max_face, max_value
 
 
-def test_images():
+def test_images(test_dir):
     test = 10
     correct = 0
     wrong = 0
     card_counter = 0
 
-    for p in os.listdir("images"):
+    for p in os.listdir(test_dir):
         card_class = CardDetector()
         score_face_dict = {}
         score_value_dict = {}
-        if os.path.isfile("images/" + str(p)):
-            img = cv2.imread("images/" + str(p), cv2.IMREAD_COLOR)
+        if os.path.isfile(os.path.join(test_dir, str(p))):
+            img = cv2.imread(os.path.join(test_dir, str(p)), cv2.IMREAD_COLOR)
 
             for i in range(test):
                 cimg = img.copy()
@@ -369,15 +378,37 @@ def test_images():
             face, value = decode_img_file_name(p)
             if (face == max_face and max_value == value):
                 correct += 1
+                print("CORRECT")
             else:
+                print("WRONG")
                 wrong += 1
-                print(f"{face} == {max_face}, {value} == {max_value}")
                 if DEBUG:
                     with open("wrong.txt", 'a') as f:
                         f.write(f"{face}, {value}\n")
             cv2.destroyAllWindows()
 
-        # print(f"CORRECT: {correct}, WRONG: {wrong}")
+        print(f"CORRECT: {correct}, WRONG: {wrong}")
+
+
+def create_random_test_cycle():
+    for p in os.listdir("images"):
+        if os.path.isfile("images/" + str(p)):
+            print("MODIFYING", str(p))
+
+            img = cv2.imread("images/" + str(p), cv2.IMREAD_COLOR)
+            pad = 1000
+
+            img = cv2.copyMakeBorder(
+                img, 0, 0, pad, pad, cv2.BORDER_CONSTANT)
+            angle = random.randint(0, 180)
+            image_center = tuple(np.array(img.shape[1::-1]) / 2)
+            rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+            result = cv2.warpAffine(
+                img, rot_mat, img.shape[1::-1], flags=cv2.INTER_LINEAR)
+
+            s = str(p).split('.')
+            print(s)
+            cv2.imwrite(f"random/{s[0]}.{s[1].lower()}", result)
 
 
 def decode_img_file_name(n):
@@ -392,4 +423,4 @@ def decode_img_file_name(n):
     return face.lower(), value
 
 
-test_images()
+test_images("random")
