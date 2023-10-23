@@ -234,7 +234,7 @@ if __name__ == "__main__":
             print("GETCAM")
             CAMERA = arg
 
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(1)
 
     if not cap.isOpened():
         print("Cannot open camera")
