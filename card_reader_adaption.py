@@ -1,9 +1,10 @@
+import time
 import cv2
 import os
+import math
 import sys
 import numpy as np
 import random
-from scipy import ndimage
 
 # rotation angle in degree
 
@@ -71,15 +72,28 @@ class CardDetector():
         got_card = False
         card = frame
         cardit = frame
+
         for c in cnts:
             if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
                 got_card = True
+#                min_pos = self.min_tup(c)
+#                max_pos = self.max_tup(c)
+#
+#                angcomp = 33
+#                angc = math.atan((max_pos[0] - min_pos[0]) /
+#                                 (max_pos[1] - min_pos[1]))*180/math.pi
+#
+#                angle = angc-angcomp
                 x, y, w, h = cv2.boundingRect(c)
                 cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
                               (36, 255, 12), 3)
+#
+#                image_center = tuple(np.array(frame.shape[1::-1]) / 2)
+#                rot_mat = cv2.getRotationMatrix2D(image_center, -angle, 1.0)
+#                rot = cv2.warpAffine(
+#                    frame, rot_mat, frame.shape[1::-1], flags=cv2.INTER_LINEAR)
 
                 cardit = frame[y:y+h, x:x+w]
-
                 s = 5
                 down_width = 55*s
                 down_height = 85*s
@@ -99,6 +113,8 @@ class CardDetector():
             if card_counter % 10 == 0:
                 cv2.imwrite(
                     f'detected/{card_counter}_detect.jpg', frame)
+                # cv2.imwrite(
+                #   f'detected/{card_counter}_rot.jpg', rot)
                 cv2.imwrite(
                     f'detected/{card_counter}_thresh.jpg', thresh)
                 cv2.imwrite(
@@ -107,6 +123,32 @@ class CardDetector():
                     f'detected/{card_counter}_cardit.jpg', cardit)
 
         return got_card, card
+
+    def min_tup(self, arr):
+        m = 99999
+        min = (99999, 99999)
+
+        for i, tup in enumerate(arr):
+            v = tup[0][0] + tup[0][1]
+
+            if v < m:
+                min = tup[0]
+                m = v
+
+        return min
+
+    def max_tup(self, arr):
+        m = 0
+        max = (0, 0)
+
+        for i, tup in enumerate(arr):
+            v = tup[0][0] + tup[0][1]
+
+            if v > m:
+                max = tup[0]
+                m = v
+
+        return max
 
     def check_color_present(self, frame):
         total_pixel = 0
@@ -327,6 +369,7 @@ def test_images(test_dir):
         card_class = CardDetector()
         score_face_dict = {}
         score_value_dict = {}
+        print(str(p))
         if os.path.isfile(os.path.join(test_dir, str(p))):
             img = cv2.imread(os.path.join(test_dir, str(p)), cv2.IMREAD_COLOR)
 
@@ -399,7 +442,7 @@ def create_random_test_cycle():
             pad = 1000
 
             img = cv2.copyMakeBorder(
-                img, 0, 0, pad, pad, cv2.BORDER_CONSTANT)
+                img, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
             angle = random.randint(0, 180)
             image_center = tuple(np.array(img.shape[1::-1]) / 2)
             rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
