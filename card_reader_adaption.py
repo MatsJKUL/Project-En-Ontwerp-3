@@ -1,4 +1,4 @@
-import time
+import imutils
 import cv2
 import os
 import math
@@ -72,28 +72,38 @@ class CardDetector():
         got_card = False
         card = frame
         cardit = frame
+        rot = frame
 
         for c in cnts:
             if cv2.contourArea(c) > MIN_AREA and cv2.contourArea(c) < MAX_AREA:
                 got_card = True
-#                min_pos = self.min_tup(c)
-#                max_pos = self.max_tup(c)
-#
-#                angcomp = 33
-#                angc = math.atan((max_pos[0] - min_pos[0]) /
-#                                 (max_pos[1] - min_pos[1]))*180/math.pi
-#
-#                angle = angc-angcomp
+                min_pos = self.min_tup(c)
+                max_pos = self.max_tup(c)
+
+                angcomp = 33
+                angc = np.arctan2(
+                    max_pos[1] - min_pos[1], max_pos[0] - min_pos[0])
+
+                if angc > 45:
+                    angc = angc + 30
+
+                angle = np.degrees(angc)-angcomp
+
+                print(angc, angle)
                 x, y, w, h = cv2.boundingRect(c)
+
+                rot = imutils.rotate_bound(frame, angle)
+
                 cv2.rectangle(frame, (x, y), (x + w - 3, y + h - 2),
                               (36, 255, 12), 3)
-#
-#                image_center = tuple(np.array(frame.shape[1::-1]) / 2)
-#                rot_mat = cv2.getRotationMatrix2D(image_center, -angle, 1.0)
-#                rot = cv2.warpAffine(
-#                    frame, rot_mat, frame.shape[1::-1], flags=cv2.INTER_LINEAR)
 
-                cardit = frame[y:y+h, x:x+w]
+                frame = cv2.circle(frame, min_pos,
+                                   5, color=(255, 0, 0), thickness=-1)
+
+                frame = cv2.circle(frame, max_pos,
+                                   5, color=(0, 0, 255), thickness=-1)
+
+                cardit = rot[y:y+h, x:x+w]
                 s = 5
                 down_width = 55*s
                 down_height = 85*s
@@ -111,14 +121,23 @@ class CardDetector():
 
         if DEBUG == 1:
             if card_counter % 10 == 0:
+                x, y = 0, 0
+                cv2.imwrite(
+                    f'detected/{card_counter}_rot.jpg', rot)
+                cv2.putText(frame, "frame", (x, y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
                 cv2.imwrite(
                     f'detected/{card_counter}_detect.jpg', frame)
-                # cv2.imwrite(
-                #   f'detected/{card_counter}_rot.jpg', rot)
+                cv2.putText(thresh, "thresh", (x, y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
                 cv2.imwrite(
                     f'detected/{card_counter}_thresh.jpg', thresh)
+                cv2.putText(card, "card", (x, y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
                 cv2.imwrite(
                     f'detected/{card_counter}_card.jpg', card)
+                cv2.putText(cardit, "cardit", (x, y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, 255)
                 cv2.imwrite(
                     f'detected/{card_counter}_cardit.jpg', cardit)
 
