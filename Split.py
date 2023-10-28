@@ -5,34 +5,25 @@ class Players:
         self.hands = [Hand()]
 
     def can_split(self):
-        # Vérifie si le joueur peut effectuer un split (deux cartes de même rang)
         card1, card2 = self.hands[0].cards
         if len(self.hands) == 1 and point_of_card(card1) == point_of_card(card2):
             return True
         else:
             return False
+
     def split(self):
-        # Divise la main en deux mains distinctes en cas de split
         if self.can_split():
             card1, card2 = self.hands[0].cards
             self.hands = [Hand([card1]), Hand([card2])]
 
     def get_card(self, card, hand_idx=0):
-        # Ajoute une carte à la main spécifiée (0 pour la main principale)
         self.hands[hand_idx].cards.append(card)
         self.hands[hand_idx].add_points()
 
-    def add_points(self, hand_idx=0):
-        # Met à jour les points pour la main spécifiée
-        self.hands[hand_idx].add_points()
-
-    def total_points(self, hand_idx=0):
-        # Met à jour le total des points pour la main spécifiée
-        self.hands[hand_idx].total_points()
-
     def status(self):
-        # Retourne les cartes et les points pour toutes les mains du joueur
         return [[hand.cards, hand.points] for hand in self.hands]
+
+
 class Hand:
     def __init__(self, cards=None):
         self.cards = cards if cards else []
@@ -42,25 +33,17 @@ class Hand:
 
     def add_points(self):
         points = 0
-        amount_of_aces = 0
         for card in self.cards:
             if card[1] > 1 and card[1] < 11:
                 points += card[1]
             elif card[1] == 1:
-                amount_of_aces += 1
                 points += 11
             else:
                 points += 10
         self.points = points
-        self.amount_of_aces = amount_of_aces
-        self.total_points()
 
-    def total_points(self):
-        if self.points > 21:
-            if self.amount_of_aces > 0:
-                self.points -= 10
-                self.amount_of_aces -= 1
-                self.total_points()
+
+
 def point_of_card(card):
     if card[1] > 1 and card[1] < 11:
         value = card[1]
@@ -69,7 +52,6 @@ def point_of_card(card):
     else:
         value = 10
     return value
-
 
 
 colors = ["Heart", "Diamonds", "Clubs", "Spades"]
@@ -86,14 +68,14 @@ def random_card_choice(cards, deleted_cards):
     return random_cards
 
 
-def hit(player, cards, deleted_cards,hand_index):
+def hit(player, cards, deleted_cards, hand_index):
     # in class when code is done
-    player.get_card(random_card_choice(cards, deleted_cards),hand_index)
+    player.get_card(random_card_choice(cards, deleted_cards), hand_index)
 
 
-def double(player, cards, deleted_cards,hand_index):
+def double(player, cards, deleted_cards, hand_index):
     # in class when code is done
-    player.get_card(random_card_choice(cards, deleted_cards),hand_index)
+    player.get_card(random_card_choice(cards, deleted_cards), hand_index)
     # money double
 
 
@@ -151,28 +133,47 @@ while run:
     busted_player = []
     for number in range(1, number_of_player + 1):
         print("Player" + str(number) + "'s", "turn")
-        if players[number-1].can_split():
+        if players[number - 1].can_split():
             split_move = input("Do you want to split (y/n)?")
-            if split_move=="y":
-                players[number-1].split()
-                players[number-1].get_card(random_card_choice(cards,deleted_cards),0)
-                print("first hand:", players[number-1].status()[0][0], "points:",players[number-1].status()[0][1])
-                players[number-1].get_card(random_card_choice(cards,deleted_cards),1)
-                print("second hand:", players[number - 1].status()[1][0], "points:", players[number - 1].status()[1][1])
+            if split_move == "y":
+                players[number - 1].split()
+                players[number - 1].get_card(
+                    random_card_choice(cards, deleted_cards), 0
+                )
+                print(
+                    "first hand:",
+                    players[number - 1].status()[0][0],
+                    "points:",
+                    players[number - 1].status()[0][1],
+                )
+                players[number - 1].get_card(
+                    random_card_choice(cards, deleted_cards), 1
+                )
+                print(
+                    "second hand:",
+                    players[number - 1].status()[1][0],
+                    "points:",
+                    players[number - 1].status()[1][1],
+                )
             else:
                 pass
-        for hand_index in range(len(players[number-1].status())):
-            hand = players[number-1].status()[hand_index]
+        for hand_index in range(len(players[number - 1].status())):
+            hand = players[number - 1].status()[hand_index]
             if hand_index > 0:
                 print(str(hand_index + 1) + "de hand : ")
-            print("Your cards:",players[number-1].status()[hand_index][0],"and points:",players[number-1].status()[hand_index][1] )
+            print(
+                "Your cards:",
+                players[number - 1].status()[hand_index][0],
+                "and points:",
+                players[number - 1].status()[hand_index][1],
+            )
             move = int(
                 input("Wich move do you want to do ? Hit (1), double (2), stand(3) ")
             )
             if move == 1:
                 run_hit = True
                 while run_hit:
-                    hit(players[number - 1], cards, deleted_cards,hand_index)
+                    hit(players[number - 1], cards, deleted_cards, hand_index)
                     player_status = players[number - 1].status()[hand_index]
                     print(
                         "You have",
@@ -192,7 +193,7 @@ while run:
                         else:
                             run_hit = False
             elif move == 2:
-                double(players[number - 1], cards, deleted_cards,hand_index)
+                double(players[number - 1], cards, deleted_cards, hand_index)
                 player_status = players[number - 1].status()[hand_index]
                 print(
                     "You have",
@@ -242,7 +243,7 @@ while run:
                     if hand_index > 0:
                         print("Second hand busted")
                     else:
-                        print("Player" + str(number + 1),"busted")
+                        print("Player" + str(number + 1), "busted")
                 elif players[number].status()[hand_index][1] > dealer_score:
                     print(
                         "Player " + str(number + 1),
@@ -251,7 +252,10 @@ while run:
                         "points.",
                     )
                 elif players[number].status()[hand_index][1] == dealer_score:
-                    print("Push. Player " + str(number + 1), "has same score as the dealer")
+                    print(
+                        "Push. Player " + str(number + 1),
+                        "has same score as the dealer",
+                    )
                 else:
                     print(
                         "Player " + str(number + 1),
@@ -270,4 +274,3 @@ while run:
         number_of_player = int(input("How much players:  "))
     else:
         run = False
-
