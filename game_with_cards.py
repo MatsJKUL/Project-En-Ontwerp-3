@@ -412,7 +412,7 @@ while running:
             clock.tick(30)
     # Score players
         if dealer_busted == False:
-            for number in range(0, len(players)):
+            for number in range(len(players)):
                 if players[number] in busted_player:
                     pass
                 elif players[number].status()[1] > dealer_score:
@@ -453,6 +453,7 @@ while running:
                         players[number].status()[1],
                         "points.",
                     )
+
 
     # end of the game
     # Réinsérer les cartes retirées dans le set de base
