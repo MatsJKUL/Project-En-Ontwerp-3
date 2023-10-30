@@ -91,7 +91,7 @@ class CardDetector():
 
                 card = cardit[0:125, 0: 100]
 
-                # cv2.imshow("card", card)
+                cv2.imshow("card", card)
 
         if show_frame:
             cv2.imshow("Frame", frame)
@@ -246,7 +246,7 @@ def main():
         if i == 1:
             print("GETCAM")
 
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         print("Cannot open camera")
@@ -262,10 +262,11 @@ def main():
 
         ret, frame = cap.read()
         # frame = cv2.imread('./data/diamonds5.jpg')
+        print("read")
         if not ret:
             break
 
-        got_card, card = card_class.process_frame(frame, SHOW_FRAME)
+        got_card, card = card_class.process_frame(frame, SHOW_FRAME,1)
 
         if got_card:
             # cv2.imwrite(f'./screens/kaart_{img_index}.jpg', card)
@@ -391,5 +392,6 @@ def decode_img_file_name(n):
 
     return face.lower(), value
 
+print("prep")
 
-test_images()
+main()
