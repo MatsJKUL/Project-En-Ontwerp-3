@@ -1,1 +1,1 @@
-from utils.cvfpscalc import CvFpsCalc
+from .cvfpscalc import CvFpsCalc
