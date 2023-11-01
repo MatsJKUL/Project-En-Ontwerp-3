@@ -613,7 +613,7 @@ CARD_WIDTH, CARD_HEIGHT = 10, 15
 background = (1, 150, 32)
 
 card_images = {}
-card_path = 'cards/'  # Create a folder 'cards' and put card images inside
+card_path = '../cards/'  # Create a folder 'cards' and put card images inside
 for suit in ['h', 'd', 'c', 's']:
     for rank in range(1, 14):
         card_name = f'{suit}{rank}.png'
