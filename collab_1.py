@@ -311,6 +311,7 @@ class Players:
         points = 0
         amount_of_aces = 0
         for card in self.cards:
+            print(card)
             if card[1] < 11 and 1 < card[1]:
                 points += card[1]
 
@@ -354,7 +355,7 @@ class Players:
 
 # Initialize Pygame
 class GameState:
-    def init_images(self):
+    def init_cards(self):
         self.card_images = {}
         self.cards = []
         self.deleted_cards = []
@@ -475,16 +476,26 @@ class GameState:
             self.players.append(max_players[i])
 
         for number in range(self.player_amount):
-            self.players[number].get_card(
-                random_card_choice(self.cards, deleted_cards))
-            self.players[number].get_card(
-                random_card_choice(self.cards, deleted_cards))
-
-        for number in range(self.player_amount):
-            self.screen.blit(self.card_images[self.players[number].status()[0][0]], ((
+            player = self.players[number]
+            player.get_card(self.random_card_choice())
+            player.get_card(self.random_card_choice())
+            player = self.players[number]
+            self.screen.blit(self.card_images[player.get_card_by_index(0)], ((
                 number+1) * self.screen_width//(self.player_amount+1) - 60, 500))
             pygame.display.update()
             self.clock.tick(30)
+
+    def random_card_choice(self):
+        random_cards = random.choice(list(self.cards))
+        self.cards.remove(random_cards)
+        self.deleted_cards.append(random_cards)
+        return random_cards
+
+    def hit(self, player):
+        player.get_card(self.random_card_choice())
+
+    def double(self, player):
+        player.get_card(self.random_card_choice())
 
     def __init__(self):
         pygame.init()
@@ -500,20 +511,20 @@ class GameState:
         self.white = (255, 255, 255)
         self.black = (0, 0, 0)
 
+        self.faces = ["h", "d", "c", "s"]
+        self.values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+
+        self.clock = pygame.time.Clock()
+        running = True
+
         print("BUTTONS")
         self.init_buttons()
         print("IMAGES")
-        self.init_images()
+        self.init_cards()
         print("HOME")
         self.start_game()
         print("STARTING")
-
-        self.colors = ["h", "d", "c", "s"]
-        waarden = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-
-        running = True
-
-        self.clock = pygame.time.Clock
+        self.init_players()
 
         while running:
             self.screen.fill(self.background)
@@ -524,26 +535,8 @@ class GameState:
             pygame.display.update()
             self.clock.tick(30)
 
-            def random_card_choice(cards, deleted_cards):
-                random_cards = random.choice(list(self.cards))
-                self.cards.remove(random_cards)
-                deleted_cards.append(random_cards)
-                return random_cards
-
-            def hit(player, cards, deleted_cards):
-                # in class when code is done
-                player.get_card(random_card_choice(self.cards, deleted_cards))
-
-            def double(player, cards, deleted_cards):
-                # in class when code is done
-                player.get_card(random_card_choice(self.cards, deleted_cards))
-                # money double
-
-            # int(input("How much players (max 7):  "))
-            # gives self.cards to the players
-            # gives self.cards to the dealer
             dealer = Players()
-            dealer.get_card(random_card_choice(self.cards, deleted_cards))
+            dealer.get_card(self.random_card_choice())
             self.screen.blit(
                 self.card_images[dealer.status()[0][0]], (550, 30))
             points = self.font.render(
@@ -553,19 +546,23 @@ class GameState:
             self.screen.blit(points, points_rect)
             pygame.display.update()
             self.clock.tick(30)
-            for number in range(len(players)):
+            for number in range(self.player_amount):
+                player = self.players[number]
                 points = self.font.render(
-                    str(players[number].status()[1]), True, self.white)
+                    str(player.get_points()), True, self.white)
                 points_rect = points.get_rect()
                 points_rect.center = ((number + 1) * self.screen_width //
-                                      (len(players) + 1), 650)
-                self.screen.blit(self.card_images[players[number].status()[0][1]], ((
-                    number+1) * self.screen_width//(len(players)+1) + (len(players[number].status()[0])-1)*30 - 60, 500))
+                                      (self.player_amount + 1), 650)
+                self.screen.blit(self.card_images[player.get_card_by_index(1)],
+                                 ((number+1) * self.screen_width//(self.player_amount+1) +
+                                  (player.get_card_amount()-1)*30 - 60, 500))
+
                 pygame.draw.rect(self.screen, self.background, points_rect)
                 self.screen.blit(points, points_rect)
                 pygame.display.update()
                 self.clock.tick(30)
-            dealer.get_card(random_card_choice(self.cards, deleted_cards))
+
+            dealer.get_card(self.random_card_choice())
             self.screen.blit(
                 self.card_images[(self.back, self.back)], (580, 30))
             pygame.display.update()
@@ -574,33 +571,35 @@ class GameState:
             # ask for the move
             busted_player = []
 
-            for number in range(len(players)):
+            for number in range(self.player_amount):
                 turn = self.font.render("YOUR TURN", True, (50, 50, 50))
                 turn_rect = turn.get_rect()
                 turn_rect.center = ((number + 1) * self.screen_width //
-                                    (len(players) + 1), 450)
+                                    (self.player_amount + 1), 450)
                 self.screen.blit(turn, turn_rect)
                 pygame.display.update()
                 self.clock.tick(30)
                 move = None
                 move = recognise_hand()
                 pygame.time.delay(1000)
+                player = self.players[number]
                 if move == 'OK':
                     move = None
                     run_hit = True
                     while run_hit:
-                        hit(players[number], self.cards, deleted_cards)
+                        self.hit(player)
+                        player_points = player.get_points()
 
-                        if player_status[1] > 21:
+                        if player_points > 21:
                             busted = self.font.render(
                                 "BUSTED", True, (255, 50, 50))
                             busted_rect = busted.get_rect()
                             busted_rect.center = (
-                                (number + 1) * self.screen_width // (len(players) + 1), 680)
+                                (number + 1) * self.screen_width // (self.player_amount + 1), 680)
                             self.screen.blit(busted, busted_rect)
                             pygame.display.update()
                             self.clock.tick(30)
-                            busted_player.append(players[number])
+                            busted_player.append(player)
                             run_hit = False
                         else:
                             move = recognise_hand()
@@ -610,9 +609,9 @@ class GameState:
                             else:
                                 run_hit = False
                 elif move == 'Fakjoe':
-                    double(players[number], self.cards, deleted_cards)
+                    self.double(player)
                     points = self.font.render(
-                        str(players[number].status()[1]), True, self.white)
+                        str(player.get_points()), True, self.white)
                     points_rect = points.get_rect()
                     points_rect.center = (
                         (number + 1) * self.screen_width // (len(players) + 1), 650)
