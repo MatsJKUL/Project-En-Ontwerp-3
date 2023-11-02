@@ -2,7 +2,6 @@ import pygame
 import time
 from pygame.locals import *
 import os
-import sys
 import random
 import csv
 import copy
@@ -372,8 +371,6 @@ class Player:
         pygame.display.update()
         game.clock.tick(30)
 
-# Initialize Pygame
-
 
 class GameState:
     def init_cards(self):
@@ -505,18 +502,11 @@ class GameState:
         self.clock.tick(30)
 
     def init_players(self):
-        Player1 = Player()
-        Player2 = Player()
-        Player3 = Player()
-        Player4 = Player()
-        Player5 = Player()
-        Player6 = Player()
-        Player7 = Player()
-        max_players = [Player1, Player2, Player3,
-                       Player4, Player5, Player6, Player7]
+        self.player_nums = {}
         self.players = []
         for i in range(0, self.player_amount):
-            self.players.append(max_players[i])
+            self.player_nums[i+1] = Player()
+            self.players.append(self.player_nums[i+1])
 
         for number in range(self.player_amount):
             player = self.players[number]
@@ -663,6 +653,19 @@ class GameState:
         pygame.display.update()
         time.sleep(3/4)
 
+    def again_screen(self):
+        self.screen.blit(self.button_again, self.again_rect)
+        self.screen.blit(self.button_stop, self.stop_rect)
+        pygame.display.update()
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.again_rect.collidepoint(event.pos):
+                        return True
+                    elif self.stop_rect.collidepoint(event.pos):
+                        return False
+
     def display_count_down(self, number):
         f = pygame.font.Font(None, 50)
         count = f.render(f"Get ready Player {number + 1}!", True, self.white)
@@ -677,123 +680,88 @@ class GameState:
         for i in range(3, -1, -1):
             self.display_count(str(i))
 
-    def run_game(self, running):
-        while running:
-            self.init_game()
-            self.busted_players = []
+    def run_game(self):
+        self.init_game()
+        self.busted_players = []
 
-            for number in range(self.player_amount):
-                turn = self.font.render("YOUR TURN", True, (50, 50, 50))
-                turn_rect = turn.get_rect()
-                turn_rect.center = ((number + 1) * self.screen_width //
-                                    (self.player_amount + 1), 450)
-                self.screen.blit(turn, turn_rect)
-                pygame.display.update()
-                self.clock.tick(30)
-                play = "CONTINUE"
-                while play != "BUST":
-                    self.display_count_down(number)
-                    move = recognise_hand()
-                    player = self.players[number]
-                    play = self.handle_move(move, player, number)
-                    print
-                    time.sleep(1)
-                    self.clear_move()
-
-                pygame.display.update()
-                self.clock.tick(30)
-                pygame.draw.rect(self.screen, self.background, turn_rect)
-
-            # self.dealer game
-            dealer_takes_card = True
-            dealer_busted = False
-            self.screen.blit(
-                self.card_images[self.dealer.status()[0][1]], (580, 30))
-            points = self.font.render(
-                str(self.dealer.status()[1]), True, self.white)
-            points_rect = points.get_rect()
-            points_rect.center = (600, 180)
-            pygame.draw.rect(self.screen, self.background, points_rect)
-            self.screen.blit(points, points_rect)
+        for number in range(self.player_amount):
+            turn = self.font.render("YOUR TURN", True, (50, 50, 50))
+            turn_rect = turn.get_rect()
+            turn_rect.center = ((number + 1) * self.screen_width //
+                                (self.player_amount + 1), 450)
+            self.screen.blit(turn, turn_rect)
             pygame.display.update()
             self.clock.tick(30)
+            play = "CONTINUE"
+            while play != "BUST":
+                self.display_count_down(number)
+                move = recognise_hand()
+                player = self.players[number]
+                play = self.handle_move(move, player, number)
+                time.sleep(1)
+                self.clear_move()
 
-            while dealer_takes_card:
-                dealer_score = self.dealer.status()[1]
-                if dealer_score > 21:
-                    busted = self.font.render("BUSTED", True, (255, 50, 50))
-                    busted_rect = busted.get_rect()
-                    busted_rect.center = (600, 210)
-                    self.screen.blit(busted, busted_rect)
-                    dealer_busted = True
-                    dealer_takes_card = False
-                elif dealer_score >= 17:
-                    dealer_takes_card = False
-                else:
-                    self.dealer.get_card(self.random_card_choice())
-                    self.screen.blit(self.card_images[self.dealer.status()[0][-1]],
-                                     (550 + (len(self.dealer.status()[0]) - 1) * 30, 30))
-                    points = self.font.render(
-                        str(self.dealer.status()[1]), True, self.white)
-                    points_rect = points.get_rect()
-                    points_rect.center = (600, 180)
-                    pygame.draw.rect(self.screen, self.background, points_rect)
-                    self.screen.blit(points, points_rect)
-                    dealer_score = self.dealer.get_points()
-
-                pygame.display.update()
-                self.clock.tick(30)
-            # Score players
-            if dealer_busted is False:
-                for number in range(self.player_amount):
-                    player = self.players[number]
-                    player_score = player.get_points()
-
-                    if player in self.busted_players:
-                        pass
-                    elif player_score > dealer_score:
-                        self.display_game_over("YOU WON", number)
-                    elif player_score == dealer_score:
-                        self.display_game_over("PUSH", number)
-                    else:
-                        self.display_game_over("YOU LOST", number)
-                pygame.display.update()
-                self.clock.tick(30)
-            if dealer_busted is True:
-                for number in range(self.player_amount):
-                    player = self.players[number]
-                    if player not in self.busted_players:
-                        you_win = self.font.render("YOU WON", True, self.white)
-                        you_win_rect = you_win.get_rect()
-                        you_win_rect.center = (
-                            (number + 1) * self.screen_width // (self.player_amount + 1), 680)
-                        self.screen.blit(you_win, you_win_rect)
-
-            play_again = True
-            for card in self.deleted_cards:
-                self.cards.append(card)
-
-            self.screen.blit(self.button_again, self.again_rect)
-            self.screen.blit(self.button_stop, self.stop_rect)
             pygame.display.update()
             self.clock.tick(30)
-            while play_again:
-                for event in pygame.event.get():
-                    if event.type == pygame.MOUSEBUTTONDOWN and play_again:
-                        if self.again_rect.collidepoint(event.pos):
-                            running = True
-                        elif self.stop_rect.collidepoint(event.pos):
-                            running = False
-                            cap.release()
-                            pygame.quit()
-                            sys.exit()
-                        pygame.draw.rect(
-                            self.screen, self.background, self.again_rect)
-                        pygame.draw.rect(
-                            self.screen, self.background, self.stop_rect)
-                        pygame.display.update()
-                        self.clock.tick(30)
-                        play_again = False
+            pygame.draw.rect(self.screen, self.background, turn_rect)
+
+        # self.dealer game
+        dealer_takes_card = True
+        dealer_busted = False
+        self.screen.blit(
+            self.card_images[self.dealer.get_card_by_index(1)], (580, 30))
+        points = self.font.render(
+            str(self.dealer.get_points()), True, self.white)
+        points_rect = points.get_rect()
+        points_rect.center = (600, 180)
+        pygame.draw.rect(self.screen, self.background, points_rect)
+        self.screen.blit(points, points_rect)
+        pygame.display.update()
+        self.clock.tick(30)
+
+        while dealer_takes_card:
+            dealer_score = self.dealer.status()[1]
+            if dealer_score > 21:
+                busted = self.font.render("BUSTED", True, (255, 50, 50))
+                busted_rect = busted.get_rect()
+                busted_rect.center = (600, 210)
+                self.screen.blit(busted, busted_rect)
+                dealer_busted = True
+                dealer_takes_card = False
+            elif dealer_score >= 17:
+                dealer_takes_card = False
+            else:
+                self.dealer.get_card(self.random_card_choice())
+                self.screen.blit(self.card_images[self.dealer.get_card_by_index(-1)],
+                                 (550 + (self.dealer.get_card_amount() - 1) * 30, 30))
+                points = self.font.render(
+                    str(self.dealer.get_points()), True, self.white)
+                points_rect = points.get_rect()
+                points_rect.center = (600, 180)
+                pygame.draw.rect(self.screen, self.background, points_rect)
+                self.screen.blit(points, points_rect)
+                dealer_score = self.dealer.get_points()
+
+            pygame.display.update()
+            self.clock.tick(30)
+        # Score players
+        for number in range(self.player_amount):
+            print(f"number {number}")
+            player = self.players[number]
+            player_score = player.get_points()
+
+            if player in self.busted_players:
+                continue
+            elif dealer_busted:
+                self.display_game_over("YOU WON", number)
+            elif player_score > dealer_score:
+                self.display_game_over("YOU WON", number)
+            elif player_score == dealer_score:
+                self.display_game_over("PUSH", number)
+            else:
+                self.display_game_over("YOU LOST", number)
+        pygame.display.update()
+        self.clock.tick(30)
 
     def __init__(self):
         pygame.init()
@@ -813,8 +781,14 @@ class GameState:
         self.values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
         self.clock = pygame.time.Clock()
-        running = True
-        self.run_game(running)
+        a = True
+        while a:
+            self.run_game()
+            a = self.again_screen()
+
+        cap.release()
+        pygame.quit()
+        quit()
 
 
 GameState()
