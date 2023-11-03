@@ -299,8 +299,9 @@ def draw_info(image, fps, mode, number):
 
 
 class Player:
-    def __init__(self, num):
+    def __init__(self, num, bet):
         self.cards = []
+        self.bet = bet
         self.points = 0
         self.amount_of_aces = 0
         self.number = num
@@ -385,6 +386,16 @@ class Player:
         pygame.display.update()
         game.clock.tick(30)
 
+    def count_cards(self):
+        d = {}
+        for card in self.cards:
+            if not str(card[1]) in d:
+                d[str(card[1])] = 1
+            else:
+                d[str(card[1])] += 1
+
+        return d
+
 
 class GameState:
     def init_cards(self):
@@ -414,6 +425,8 @@ class GameState:
         self.split = self.font.render("Split", True, self.white)
         self.button_again = self.font.render("Play again", True, self.white)
         self.button_stop = self.font.render("Stop", True, self.white)
+        self.min_bet_txt = self.font.render(
+            f"MINIMUM Bet: ${self.min_bet}", True, self.white)
 
         self.play_rect = self.play_button.get_rect()
         self.hit_rect = self.button_hit.get_rect()
@@ -422,6 +435,7 @@ class GameState:
         self.split_rect = self.split.get_rect()
         self.again_rect = self.button_again.get_rect()
         self.stop_rect = self.button_stop.get_rect()
+        self.min_bet_rect = self.min_bet_txt.get_rect()
 
         self.play_rect.center = (
             self.screen_width // 2, self.screen_height // 2)
@@ -433,6 +447,8 @@ class GameState:
                                   100, self.screen_height // 2)
         self.stop_rect.center = (self.screen_width // 2 +
                                  100, self.screen_height // 2)
+
+        self.min_bet_rect.center = (125, 40)
 
     def get_num(self, event):
         if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]:
@@ -520,7 +536,8 @@ class GameState:
         self.player_nums = {}
         self.players = []
         for i in range(0, self.player_amount):
-            self.player_nums[i+1] = Player(i+1)
+            bet = self.min_bet
+            self.player_nums[i+1] = Player(i+1, bet)
             self.players.append(self.player_nums[i+1])
 
         for number in range(self.player_amount):
@@ -545,15 +562,24 @@ class GameState:
     def double(self, player):
         player.get_card(self.random_card_choice())
 
-    def display_game_over(self, text, number):
-        text = self.font.render(text, True, self.white)
+    def display_game_over(self, text, number, color=(255, 255, 255)):
+        name = self.font.render(
+            str(f"Player {number + 1}"), True, self.white)
+        name_rect = name.get_rect()
+        name_rect.center = ((number + 1) * self.screen_width //
+                            (self.player_amount + 1), 650)
+
+        pygame.draw.rect(self.screen, self.background, name_rect)
+        self.screen.blit(name, name_rect)
+
+        text = self.font.render(text, True, color)
         text_rect = text.get_rect()
         text_rect.center = (
             (number + 1) * self.screen_width // (self.player_amount + 1), 680)
         self.screen.blit(text, text_rect)
 
     def init_dealer(self):
-        self.dealer = Player('d')
+        self.dealer = Player('d', 0)
         self.dealer.get_card(self.random_card_choice())
         self.dealer.get_card(self.random_card_choice())
 
@@ -578,6 +604,7 @@ class GameState:
         print("DEALER")
         self.init_dealer()
 
+        self.screen.blit(self.min_bet_txt, self.min_bet_rect)
         pygame.display.update()
         self.clock.tick(30)
 
@@ -620,6 +647,15 @@ class GameState:
                 return "BUST"
             else:
                 return "CONTINUE"
+        elif move == "Fakjoe":
+            c = player.count_cards()
+            split = None
+            for key in c:
+                if c[key] > 1:
+                    split = key
+                    break
+            if split:
+                pass
 
         elif move == 'Fakjoe':
             self.double(player)
@@ -702,6 +738,10 @@ class GameState:
         count_rect = count.get_rect()
         count_rect.center = (self.screen_width - 200, 80)
 
+        rect = pygame.Rect((self.screen_width - 350, 115), (300, 70))
+        pygame.draw.rect(self.screen, (255, 0, 0), rect)
+        pygame.display.update()
+
         pygame.draw.rect(
             self.screen, self.background, count_rect)
         self.screen.blit(count, count_rect)
@@ -709,6 +749,29 @@ class GameState:
 
         for i in range(3, -1, -1):
             self.display_count(str(i))
+        self.display_count("DETECT")
+
+    def display_score(self):
+        self.clear_cards()
+        dealer_score = self.dealer.get_points()
+        for number in range(self.player_amount):
+            print(f"number {number}")
+            player = self.players[number]
+            player_score = player.get_points()
+
+            if player in self.busted_players:
+                self.display_game_over("BUSTED", number, (255, 0, 0))
+                continue
+            elif dealer_score > 21:
+                self.display_game_over("YOU WON", number)
+            elif player_score > dealer_score:
+                self.display_game_over("YOU WON", number)
+            elif player_score == dealer_score:
+                self.display_game_over("PUSH", number)
+            else:
+                self.display_game_over("YOU LOST", number)
+        pygame.display.update()
+        self.clock.tick(30)
 
     def run_game(self):
         self.init_game()
@@ -741,7 +804,6 @@ class GameState:
 
         # self.dealer game
         dealer_takes_card = True
-        dealer_busted = False
         self.screen.blit(
             self.card_images[self.dealer.get_card_by_index(1)], (580, 30))
         points = self.font.render(
@@ -760,7 +822,6 @@ class GameState:
                 busted_rect = busted.get_rect()
                 busted_rect.center = (600, 210)
                 self.screen.blit(busted, busted_rect)
-                dealer_busted = True
                 dealer_takes_card = False
             elif dealer_score >= 17:
                 dealer_takes_card = False
@@ -778,24 +839,8 @@ class GameState:
 
             pygame.display.update()
             self.clock.tick(30)
-        # Score players
-        for number in range(self.player_amount):
-            print(f"number {number}")
-            player = self.players[number]
-            player_score = player.get_points()
 
-            if player in self.busted_players:
-                continue
-            elif dealer_busted:
-                self.display_game_over("YOU WON", number)
-            elif player_score > dealer_score:
-                self.display_game_over("YOU WON", number)
-            elif player_score == dealer_score:
-                self.display_game_over("PUSH", number)
-            else:
-                self.display_game_over("YOU LOST", number)
-        pygame.display.update()
-        self.clock.tick(30)
+        self.display_score()
 
     def __init__(self):
         pygame.init()
@@ -804,6 +849,7 @@ class GameState:
         self.font = pygame.font.Font(None, 36)
         self.background = (1, 150, 32)
 
+        self.min_bet = 1
         self.screen = pygame.display.set_mode(
             (self.screen_width, self.screen_height))
         pygame.display.set_caption("Blackjack self.cards")
