@@ -299,10 +299,11 @@ def draw_info(image, fps, mode, number):
 
 
 class Player:
-    def __init__(self):
+    def __init__(self, num):
         self.cards = []
         self.points = 0
         self.amount_of_aces = 0
+        self.number = num
         self.add_points()
 
     def get_card(self, card):
@@ -353,18 +354,22 @@ class Player:
     def get_card_amount(self):
         return len(self.cards)
 
-    def display_player_cards(self, game, number, pos):
+    def display_player_cards(self, game, pos):
+        pts = self.get_points()
         points = game.font.render(
-            str(self.get_points()), True, game.white)
+            str(pts), True, game.white)
         points_rect = points.get_rect()
         points_rect.center = ((pos + 1) * game.screen_width //
                               (game.max_cards_on_screen + 1), 685)
+
+        if (pts > 21):
+            game.render_bust(pos)
 
         pygame.draw.rect(game.screen, game.background, points_rect)
         game.screen.blit(points, points_rect)
 
         name = game.font.render(
-            str(f"Player {number+1}"), True, game.white)
+            str(f"Player {self.number}"), True, game.white)
         name_rect = name.get_rect()
         name_rect.center = ((pos + 1) * game.screen_width //
                             (game.max_cards_on_screen + 1), 650)
@@ -374,8 +379,8 @@ class Player:
 
         for i in range(self.get_card_amount()):
             game.screen.blit(game.card_images[self.get_card_by_index(i)], ((
-                number+1) * game.screen_width//(game.max_cards_on_screen+1) +
-                (self.get_card_amount() - 1) * 30 - 60, 500))
+                pos+1) * game.screen_width//(game.max_cards_on_screen+1) +
+                (i) * 30 - 60, 500))
 
         pygame.display.update()
         game.clock.tick(30)
@@ -476,17 +481,16 @@ class GameState:
     def calc_next_card_pos(self, player, player_num):
         return (player_num + 1) * self.screen_width // (self.max_cards_on_screen + 1) + (player.get_card_amount() - 1) * 30 - 60
 
-    def render_hit(self, player_num):
-        player = self.players[player_num]
+    def render_hit(self, player, pos):
 
         # Calculate And render Points of the player
         points = self.font.render(str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
-            (player_num+1)*self.screen_width//(self.max_cards_on_screen + 1), 685)
+            (pos+1)*self.screen_width//(self.max_cards_on_screen + 1), 685)
 
         card_image = self.card_images[player.get_card_by_index(-1)]
-        image_point = (self.calc_next_card_pos(player, player_num), 500)
+        image_point = (self.calc_next_card_pos(player, pos), 500)
         self.screen.blit(card_image, image_point)
 
         pygame.draw.rect(
@@ -516,16 +520,18 @@ class GameState:
         self.player_nums = {}
         self.players = []
         for i in range(0, self.player_amount):
-            self.player_nums[i+1] = Player()
+            self.player_nums[i+1] = Player(i+1)
             self.players.append(self.player_nums[i+1])
 
         for number in range(self.player_amount):
             player = self.players[number]
+            print(f"PLAYER: {player.number}")
             player.get_card(self.random_card_choice())
             player.get_card(self.random_card_choice())
             player = self.players[number]
-            if number >= 0 and number < 3:
-                player.display_player_cards(self, number, number)
+            if number >= 0 and number < 2:
+                print(number)
+                player.display_player_cards(self, number + 1)
 
     def random_card_choice(self):
         random_cards = random.choice(list(self.cards))
@@ -547,7 +553,7 @@ class GameState:
         self.screen.blit(text, text_rect)
 
     def init_dealer(self):
-        self.dealer = Player()
+        self.dealer = Player('d')
         self.dealer.get_card(self.random_card_choice())
         self.dealer.get_card(self.random_card_choice())
 
@@ -575,12 +581,12 @@ class GameState:
         pygame.display.update()
         self.clock.tick(30)
 
-    def render_bust(self, number):
+    def render_bust(self, pos):
         busted = self.font.render(
             "BUSTED", True, (255, 50, 50))
         busted_rect = busted.get_rect()
         busted_rect.center = (
-            (number + 1) * self.screen_width // (self.max_cards_on_screen + 1), 720)
+            (pos + 1) * self.screen_width // (self.max_cards_on_screen + 1), 720)
         self.screen.blit(busted, busted_rect)
         pygame.display.update()
         self.clock.tick(30)
@@ -591,6 +597,7 @@ class GameState:
         clear = f.render("AAAAAAAAAAAAAAAAAAAAAAAAAAA",
                          True, self.background)
         clear_rect = clear.get_rect()
+        print("CLC", clear_rect)
         clear_rect.center = (
             int(self.screen_width/2), int(self.screen_height/2))
 
@@ -599,16 +606,16 @@ class GameState:
         self.screen.blit(clear, clear_rect)
         pygame.display.update()
 
-    def handle_move(self, move, player, number):
+    def handle_move(self, move, player, pos):
         if move == 'OK':
             # if you want to hit this happens
             print("RUNNING HIT")
             self.hit(player)
-            self.render_hit(number)
+            self.render_hit(player, pos)
             player_points = player.get_points()
 
             if player_points > 21:
-                self.render_bust(number)
+                self.render_bust(pos)
                 self.busted_players.append(player)
                 return "BUST"
             else:
@@ -620,7 +627,7 @@ class GameState:
                 str(player.get_points()), True, self.white)
             points_rect = points.get_rect()
             points_rect.center = (
-                (number + 1) * self.screen_width // (self.player_amount + 1), 650)
+                (pos + 1) * self.screen_width // (self.player_amount + 1), 650)
             pygame.draw.rect(self.screen, self.background, points_rect)
             self.screen.blit(points, points_rect)
             pygame.display.update()
@@ -648,9 +655,13 @@ class GameState:
                 self.screen.blit(points, points_rect)
 
         elif move.upper() == 'PEACE':
-            print("PEACE, RENDER PEACE")
             self.render_move("PEACE")
             return 'BUST'
+
+    def clear_cards(self):
+        rect = pygame.Rect((150, 400), (self.screen_width - 300, 350))
+        pygame.draw.rect(self.screen, self.background, rect)
+        pygame.display.update()
 
     def display_count(self, txt):
         f = pygame.font.Font(None, 80)
@@ -666,9 +677,11 @@ class GameState:
         time.sleep(3/4)
 
     def render_cards_on_screen(self, number):
+        self.clear_cards()
         for i in range(-1, 2):
-            player = self.players[number + i]
-            player.display_player_cards(self, number, i + 1)
+            if number + i <= self.player_amount - 1 and number + i >= 0:
+                player = self.players[number + i]
+                player.display_player_cards(self, i + 1)
 
     def again_screen(self):
         self.screen.blit(self.button_again, self.again_rect)
@@ -702,11 +715,13 @@ class GameState:
         self.busted_players = []
 
         for number in range(self.player_amount):
+            print(f"NEXT PLAYER {number+1}")
             self.render_cards_on_screen(number)
 
-            turn = self.font.render("YOUR TURN", True, (50, 50, 50))
+            turn = self.font.render(
+                f"YOUR TURN Player {number + 1}", True, (50, 50, 50))
             turn_rect = turn.get_rect()
-            turn_rect.center = ((number + 1) * self.screen_width //
+            turn_rect.center = (2 * self.screen_width //
                                 (self.max_cards_on_screen + 1), 450)
             self.screen.blit(turn, turn_rect)
             pygame.display.update()
@@ -716,7 +731,7 @@ class GameState:
                 self.display_count_down(number)
                 move = recognise_hand()
                 player = self.players[number]
-                play = self.handle_move(move, player, number)
+                play = self.handle_move(move, player, 1)
                 time.sleep(1)
                 self.clear_move()
 
