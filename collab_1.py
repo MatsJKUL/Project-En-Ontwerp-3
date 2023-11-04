@@ -7,6 +7,7 @@ import csv
 import copy
 import argparse
 import itertools
+from tts import tts
 
 import cv2 as cv
 import numpy as np
@@ -518,6 +519,7 @@ class GameState:
         self.clock.tick(30)
 
     def render_move(self, txt):
+        pygame.mixer.music.stop()
         f = pygame.font.Font(None, 50)
         hit_popup = f.render(txt, True, (255, 0, 0))
         hit_popup_rect = hit_popup.get_rect()
@@ -530,6 +532,8 @@ class GameState:
 
         pygame.display.update()
         self.clock.tick(30)
+
+        pygame.mixer.Sound.play(self.sounds[txt.upper()])
 
     def init_players(self):
         self.player_nums = {}
@@ -641,6 +645,9 @@ class GameState:
 
             if player_points > 21:
                 self.render_bust(pos)
+                time.sleep(.5)
+                pygame.mixer.Sound.play(self.sounds["BUST"])
+                pygame.mixer.Sound.play(self.sounds["CRASH"])
                 self.busted_players.append(player)
                 return "BUST"
             else:
@@ -706,12 +713,14 @@ class GameState:
         count = f.render(txt, True, self.white)
         count_rect = count.get_rect()
         count_rect.center = (self.screen_width - 200, 150)
+        pygame.mixer.Sound.play(self.sounds[txt])
 
         pygame.draw.rect(
             self.screen, (255, 0, 0), count_rect)
         self.screen.blit(count, count_rect)
         pygame.display.update()
-        time.sleep(3/4)
+        time.sleep(1)
+        pygame.mixer.music.stop()
 
     def render_cards_on_screen(self, number):
         self.clear_cards()
@@ -860,6 +869,19 @@ class GameState:
 
         self.faces = ["h", "d", "c", "s"]
         self.values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        self.sounds = {}
+
+        self.sounds['0'] = pygame.mixer.Sound("0.mp3")
+        self.sounds['1'] = pygame.mixer.Sound("1.mp3")
+        self.sounds['2'] = pygame.mixer.Sound("2.mp3")
+        self.sounds['3'] = pygame.mixer.Sound("3.mp3")
+
+        self.sounds['DETECT'] = pygame.mixer.Sound("DETECT.mp3")
+        self.sounds['FAKJOE'] = pygame.mixer.Sound("FAKJOE.mp3")
+        self.sounds['HIT'] = pygame.mixer.Sound("HIT.mp3")
+        self.sounds['PEACE'] = pygame.mixer.Sound("PEACE.mp3")
+        self.sounds['BUST'] = pygame.mixer.Sound("BUST.mp3")
+        self.sounds['CRASH'] = pygame.mixer.Sound("CRASH.mp3")
 
         self.clock = pygame.time.Clock()
         a = True
