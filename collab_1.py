@@ -371,6 +371,7 @@ class Player:
 
         name = game.font.render(
             str(f"Player {self.number}"), True, game.white)
+
         name_rect = name.get_rect()
         name_rect.center = ((pos + 1) * game.screen_width //
                             (game.max_cards_on_screen + 1), 650)
@@ -386,13 +387,13 @@ class Player:
         pygame.display.update()
         game.clock.tick(30)
 
-    def count_cards(self):
+    def get_double_card_index(self):
         d = {}
-        for card in self.cards:
+        for i, card in enumerate(self.cards):
             if not str(card[1]) in d:
                 d[str(card[1])] = 1
             else:
-                d[str(card[1])] += 1
+                return i
 
         return d
 
@@ -498,8 +499,6 @@ class GameState:
         return (player_num + 1) * self.screen_width // (self.max_cards_on_screen + 1) + (player.get_card_amount() - 1) * 30 - 60
 
     def render_hit(self, player, pos):
-
-        # Calculate And render Points of the player
         points = self.font.render(str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
@@ -635,7 +634,6 @@ class GameState:
 
     def handle_move(self, move, player, pos):
         if move == 'OK':
-            # if you want to hit this happens
             print("RUNNING HIT")
             self.hit(player)
             self.render_hit(player, pos)
@@ -648,14 +646,17 @@ class GameState:
             else:
                 return "CONTINUE"
         elif move == "Fakjoe":
-            c = player.count_cards()
-            split = None
-            for key in c:
-                if c[key] > 1:
-                    split = key
-                    break
-            if split:
-                pass
+            double_card_index = player.get_double_card_index()
+            double_card = player.cards.pop(double_card_index)
+            # how do you init player?
+            new_player = Player(player.number + .1, self.min_bet)
+
+            new_player.cards = [double_card]
+            # Will this insert work?
+            self.players.insert(player.number, new_player)
+            # check good render
+            self.render_cards_on_screen(player.number - 1)
+            self.player_amount += 1
 
         elif move == 'Fakjoe':
             self.double(player)
@@ -778,11 +779,12 @@ class GameState:
         self.busted_players = []
 
         for number in range(self.player_amount):
-            print(f"NEXT PLAYER {number+1}")
+            player = self.players[number]
+            print(f"NEXT PLAYER {player.number+1}")
             self.render_cards_on_screen(number)
 
             turn = self.font.render(
-                f"YOUR TURN Player {number + 1}", True, (50, 50, 50))
+                f"YOUR TURN Player {player.number + 1}", True, (50, 50, 50))
             turn_rect = turn.get_rect()
             turn_rect.center = (2 * self.screen_width //
                                 (self.max_cards_on_screen + 1), 450)
@@ -793,7 +795,6 @@ class GameState:
             while play != "BUST":
                 self.display_count_down(number)
                 move = recognise_hand()
-                player = self.players[number]
                 play = self.handle_move(move, player, 1)
                 time.sleep(1)
                 self.clear_move()
