@@ -310,6 +310,9 @@ class Player:
         self.add_points()
         self.hand_amount = 1
 
+    def get_inzet(self):
+        return self.bet
+
     def get_card(self, card):
         self.cards.append(card)
         self.add_points()
@@ -358,6 +361,14 @@ class Player:
     def get_card_amount(self):
         return len(self.cards)
 
+    def get_winst(self):
+        if self.state == 'BUSTED':
+            return -self.bet
+        elif self.state == 'PUSH':
+            return 0
+        elif self.state == 'WIN':
+            return 2*self.bet
+
     def display_player_cards(self, game, pos):
         self.add_points()
         pts = self.get_points()
@@ -390,6 +401,7 @@ class Player:
 
         pygame.display.update()
         game.clock.tick(30)
+
 
 class GameState:
     def init_cards(self):
@@ -444,7 +456,7 @@ class GameState:
         self.min_bet_rect.center = (125, 40)
 
     def get_num(self, event):
-        if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]and type(event.unicode) == int:
+        if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7] and event.unicode.isdigit():
 
             return int(event.unicode)
 
@@ -571,11 +583,26 @@ class GameState:
             (number + 1) * self.screen_width // (self.player_amount + 1), 680)
         self.screen.blit(text, text_rect)
 
-        points = self.font.render(str(player.get_points()), True, self.white)
+        points = self.font.render(
+            "PUNTEN" + str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
             (number + 1) * self.screen_width // (self.player_amount + 1), 600)
         self.screen.blit(points, points_rect)
+
+        inzet = self.font.render("INZET: " + str(
+            player.get_inzet()), True, self.white)
+        inzet_rect = inzet.get_rect()
+        inzet_rect.center = (
+            (number + 1) * self.screen_width // (self.player_amount + 1) - 30, 500)
+        self.screen.blit(inzet, inzet_rect)
+
+        winst = self.font.render("WINST: " + str(
+            player.get_winst()), True, self.white)
+        winst_rect = winst.get_rect()
+        winst_rect.center = (
+            (number + 1) * self.screen_width // (self.player_amount + 1) + 30, 550)
+        self.screen.blit(winst, winst_rect)
 
     def init_dealer(self):
         self.dealer = Player('d', 0, 'dealer')
@@ -653,19 +680,19 @@ class GameState:
                 return self.handle_move(move, player, pos)
             else:
                 new_player = Player(player.number, self.min_bet,
-                                player.name + "-" + str(player.hand_amount))
+                                    player.name + "-" + str(player.hand_amount))
                 player.hand_amount += 1
                 new_player.cards = [player.cards[1]]
                 new_player.get_card(self.random_card_choice())
                 player.cards = [player.cards[0]]
                 player.get_card(self.random_card_choice())
                 # Will this insert work?
-                self.players.insert(player.number + player.hand_amount - 2, new_player)
+                self.players.insert(
+                    player.number + player.hand_amount - 2, new_player)
                 print(self.players)
                 # check good render
                 self.player_amount += 1
                 self.render_cards_on_screen(player.number - 1)
-
 
         elif move == 'closed':
             self.double(player)
@@ -773,16 +800,21 @@ class GameState:
             player_score = player.get_points()
 
             if player in self.busted_players:
+                player.state = 'BUSTED'
                 self.display_game_over("BUSTED", number, (255, 0, 0))
                 continue
             elif dealer_score > 21:
+                player.state = 'WIN'
                 self.display_game_over("YOU WON", number)
             elif player_score > dealer_score:
+                player.state = 'WIN'
                 self.display_game_over("YOU WON", number)
 
             elif player_score == dealer_score:
+                player.state = 'PUSH'
                 self.display_game_over("PUSH", number)
             else:
+                player.state = 'BUSTED'
                 self.display_game_over("YOU LOST", number)
         pygame.display.update()
         self.clock.tick(30)
