@@ -16,6 +16,7 @@ def init_sounds():
     tts("FAKJOE", "FAKJOE")
     tts("HIT", "HIT")
     tts("BUST", "BUST")
+    tts("DOUBLE","DOUBLE")
 
 
 init_sounds()
