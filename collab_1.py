@@ -406,10 +406,6 @@ class GameState:
                 card_image_name = card_name + '.png'
                 self.card_images[(face, value)] = pygame.image.load(
                     os.path.join(card_path, card_image_name))
-        for i in range(52):
-            self.cards.append(('h', 5))
-        for i in range(52):
-            self.cards.append(('s', 5))
         self.back = 'back'
         self.card_images[(self.back, self.back)] = pygame.image.load(
             os.path.join(card_path, f'{self.back}.png'))
@@ -448,7 +444,7 @@ class GameState:
         self.min_bet_rect.center = (125, 40)
 
     def get_num(self, event):
-        if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]:
+        if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]and type(event.unicode) == int:
 
             return int(event.unicode)
 
@@ -486,7 +482,7 @@ class GameState:
                 elif event.type == pygame.KEYDOWN:
                     key = self.get_num(event)
 
-                    if key is not None:
+                    if key is not None and type(key) == int:
                         player_amount = key
 
             self.display_player_number(player_amount)
@@ -652,7 +648,7 @@ class GameState:
             else:
                 return "CONTINUE"
         elif move == "Fakjoe":
-            if player.cards[0][1] != player.cards[1][1]:
+            if player.cards[0][1] != player.cards[1][1] and len(player.cards) == 2:
                 move = recognise_hand()
                 return self.handle_move(move, player, pos)
             else:
@@ -667,8 +663,9 @@ class GameState:
                 self.players.insert(player.number + player.hand_amount - 2, new_player)
                 print(self.players)
                 # check good render
-                self.render_cards_on_screen(player.number - 1)
                 self.player_amount += 1
+                self.render_cards_on_screen(player.number - 1)
+
 
         elif move == 'closed':
             self.double(player)
