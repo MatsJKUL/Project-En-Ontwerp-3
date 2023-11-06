@@ -125,6 +125,8 @@ def recognise_hand():
                     return 'Peace'
                 elif hand_sign_id == 5:
                     return 'Fakjoe'
+                if hand_sign_id == 1:
+                    return 'closed'
 
     cap.release()
 
@@ -508,7 +510,24 @@ class GameState:
 
         pygame.display.update()
         self.clock.tick(30)
+    def render_double(self,player, pos):
+        points = self.font.render(str(player.get_points()), True, self.white)
+        points_rect = points.get_rect()
+        points_rect.center = (
+            (pos + 1) * self.screen_width // (self.max_cards_on_screen + 1), 685)
 
+        card_image = self.card_images[player.get_card_by_index(-1)]
+        image_point = (self.calc_next_card_pos(player, pos), 500)
+        self.screen.blit(card_image, image_point)
+
+        pygame.draw.rect(
+            self.screen, self.background, points_rect)
+        self.screen.blit(points, points_rect)
+
+        self.render_move("DOUBLE")
+
+        pygame.display.update()
+        self.clock.tick(30)
     def render_move(self, txt):
         pygame.mixer.music.stop()
         f = pygame.font.Font(None, 50)
@@ -644,7 +663,7 @@ class GameState:
                 pygame.mixer.Sound.play(self.sounds["BUST"])
                 pygame.mixer.Sound.play(self.sounds["CRASH"])
                 self.busted_players.append(player)
-                return "BUST"
+                return "STOP"
             else:
                 return "CONTINUE"
         elif move == "Fakjoe":
@@ -668,41 +687,22 @@ class GameState:
 
 
         elif move == 'closed':
+            print('double')
             self.double(player)
-            points = self.font.render(
-                str(player.get_points()), True, self.white)
-            points_rect = points.get_rect()
-            points_rect.center = (
-                (pos + 1) * self.screen_width // (self.player_amount + 1), 650)
-            pygame.draw.rect(self.screen, self.background, points_rect)
-            self.screen.blit(points, points_rect)
-            pygame.display.update()
-            self.clock.tick(30)
-            player_status = player.status()
-            self.screen.blit(self.card_images[player.get_card_by_index(-1)], ((number + 1) * self.screen_width // (
-                self.player_amount + 1) + (player.get_card_amount() - 1) * 30 - 60, 500))
+            self.render_double(player, pos)
+            player_points = player.get_points()
 
-            if player_status[1] > 21:
-                busted = self.font.render(
-                    "BUSTED", True, (255, 50, 50))
-                busted_rect = busted.get_rect()
-                busted_rect.center = (
-                    (number + 1) * self.screen_width // (self.player_amount + 1), 680)
-                self.screen.blit(busted, busted_rect)
+            if player_points > 21:
+                self.render_bust(pos)
+                time.sleep(.5)
+                pygame.mixer.Sound.play(self.sounds["BUST"])
+                pygame.mixer.Sound.play(self.sounds["CRASH"])
                 self.busted_players.append(player)
-            else:
-                points = self.font.render(
-                    str(player.status()[1]), True, self.white)
-                points_rect = points.get_rect()
-                points_rect.center = (
-                    (number + 1) * self.screen_width // (self.player_amount + 1), 650)
-                pygame.draw.rect(
-                    self.screen, self.background, points_rect)
-                self.screen.blit(points, points_rect)
+            return "STOP"
 
         elif move.upper() == 'PEACE':
             self.render_move("STAND")
-            return 'BUST'
+            return 'STOP'
 
     def clear_cards(self):
         rect = pygame.Rect((150, 400), (self.screen_width - 300, 350))
@@ -807,7 +807,7 @@ class GameState:
                 pygame.display.update()
                 self.clock.tick(30)
                 play = "CONTINUE"
-                while play != "BUST":
+                while play != "STOP":
                     print("fuclk")
                     self.display_count_down(number)
                     move = recognise_hand()
@@ -888,6 +888,7 @@ class GameState:
         self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
         self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
         self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
+        self.sounds['DOUBLE'] = pygame.mixer.Sound("sounds/DOUBLE.mp3")
         self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
         self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
         self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
