@@ -391,17 +391,6 @@ class Player:
         pygame.display.update()
         game.clock.tick(30)
 
-    def get_double_card_index(self):
-        d = {}
-        for i, card in enumerate(self.cards):
-            if not str(card[1]) in d:
-                d[str(card[1])] = 1
-            else:
-                return i
-
-        return d
-
-
 class GameState:
     def init_cards(self):
         self.card_images = {}
@@ -417,7 +406,10 @@ class GameState:
                 card_image_name = card_name + '.png'
                 self.card_images[(face, value)] = pygame.image.load(
                     os.path.join(card_path, card_image_name))
-
+        for i in range(52):
+            self.cards.append(('h', 5))
+        for i in range(52):
+            self.cards.append(('s', 5))
         self.back = 'back'
         self.card_images[(self.back, self.back)] = pygame.image.load(
             os.path.join(card_path, f'{self.back}.png'))
@@ -583,6 +575,12 @@ class GameState:
             (number + 1) * self.screen_width // (self.player_amount + 1), 680)
         self.screen.blit(text, text_rect)
 
+        points = self.font.render(str(player.get_points()), True, self.white)
+        points_rect = points.get_rect()
+        points_rect.center = (
+            (number + 1) * self.screen_width // (self.player_amount + 1), 600)
+        self.screen.blit(points, points_rect)
+
     def init_dealer(self):
         self.dealer = Player('d', 0, 'dealer')
         self.dealer.get_card(self.random_card_choice())
@@ -629,7 +627,6 @@ class GameState:
         clear = f.render("AAAAAAAAAAAAAAAAAAAAAAAAAAA",
                          True, self.background)
         clear_rect = clear.get_rect()
-        print("CLC", clear_rect)
         clear_rect.center = (
             int(self.screen_width/2), int(self.screen_height/2))
 
@@ -655,22 +652,25 @@ class GameState:
             else:
                 return "CONTINUE"
         elif move == "Fakjoe":
-            double_card_index = player.get_double_card_index()
-            double_card = player.cards.pop(double_card_index)
-            # how do you init player?
-            new_player = Player(player.number, self.min_bet,
+            if player.cards[0][1] != player.cards[1][1]:
+                move = recognise_hand()
+                return self.handle_move(move, player, pos)
+            else:
+                new_player = Player(player.number, self.min_bet,
                                 player.name + "-" + str(player.hand_amount))
+                player.hand_amount += 1
+                new_player.cards = [player.cards[1]]
+                new_player.get_card(self.random_card_choice())
+                player.cards = [player.cards[0]]
+                player.get_card(self.random_card_choice())
+                # Will this insert work?
+                self.players.insert(player.number + player.hand_amount - 2, new_player)
+                print(self.players)
+                # check good render
+                self.render_cards_on_screen(player.number - 1)
+                self.player_amount += 1
 
-            player.hand_amount += 1
-
-            new_player.cards = [double_card]
-            # Will this insert work?
-            self.players.insert(player.number, new_player)
-            # check good render
-            self.render_cards_on_screen(player.number - 1)
-            self.player_amount += 1
-
-        elif move == 'Fakjoe':
+        elif move == 'closed':
             self.double(player)
             points = self.font.render(
                 str(player.get_points()), True, self.white)
@@ -704,7 +704,7 @@ class GameState:
                 self.screen.blit(points, points_rect)
 
         elif move.upper() == 'PEACE':
-            self.render_move("PEACE")
+            self.render_move("STAND")
             return 'BUST'
 
     def clear_cards(self):
@@ -782,6 +782,7 @@ class GameState:
                 self.display_game_over("YOU WON", number)
             elif player_score > dealer_score:
                 self.display_game_over("YOU WON", number)
+
             elif player_score == dealer_score:
                 self.display_game_over("PUSH", number)
             else:
@@ -792,33 +793,37 @@ class GameState:
     def run_game(self):
         self.init_game()
         self.busted_players = []
+        number = 0
+        while True:
+            if number < self.player_amount:
+                print(self.player_amount)
+                player = self.players[number]
+                print(f"NEXT PLAYER {player.number+1}")
+                self.render_cards_on_screen(number)
 
-        for number in range(self.player_amount):
-            print(self.player_amount)
-            player = self.players[number]
-            print(f"NEXT PLAYER {player.number+1}")
-            self.render_cards_on_screen(number)
+                turn = self.font.render(
+                    f"YOUR TURN {player.name}", True, (50, 50, 50))
+                turn_rect = turn.get_rect()
+                turn_rect.center = (2 * self.screen_width //
+                                    (self.max_cards_on_screen + 1), 450)
+                self.screen.blit(turn, turn_rect)
+                pygame.display.update()
+                self.clock.tick(30)
+                play = "CONTINUE"
+                while play != "BUST":
+                    print("fuclk")
+                    self.display_count_down(number)
+                    move = recognise_hand()
+                    play = self.handle_move(move, player, 1)
+                    time.sleep(1)
+                    self.clear_move()
 
-            turn = self.font.render(
-                f"YOUR TURN {player.name}", True, (50, 50, 50))
-            turn_rect = turn.get_rect()
-            turn_rect.center = (2 * self.screen_width //
-                                (self.max_cards_on_screen + 1), 450)
-            self.screen.blit(turn, turn_rect)
-            pygame.display.update()
-            self.clock.tick(30)
-            play = "CONTINUE"
-            while play != "BUST":
-                self.display_count_down(number)
-                move = recognise_hand()
-                play = self.handle_move(move, player, 1)
-                time.sleep(1)
-                self.clear_move()
-
-            pygame.display.update()
-            self.clock.tick(30)
-            pygame.draw.rect(self.screen, self.background, turn_rect)
-
+                pygame.display.update()
+                self.clock.tick(30)
+                pygame.draw.rect(self.screen, self.background, turn_rect)
+                number += 1
+            else:
+                break
         # self.dealer game
         dealer_takes_card = True
         self.screen.blit(
@@ -886,7 +891,7 @@ class GameState:
         self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
         self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
         self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
-        self.sounds['PEACE'] = pygame.mixer.Sound("sounds/PEACE.mp3")
+        self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
         self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
         self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
 
