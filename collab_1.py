@@ -300,13 +300,15 @@ def draw_info(image, fps, mode, number):
 
 
 class Player:
-    def __init__(self, num, bet):
+    def __init__(self, num, bet, name):
         self.cards = []
         self.bet = bet
         self.points = 0
         self.amount_of_aces = 0
         self.number = num
+        self.name = name
         self.add_points()
+        self.hand_amount = 1
 
     def get_card(self, card):
         self.cards.append(card)
@@ -357,6 +359,7 @@ class Player:
         return len(self.cards)
 
     def display_player_cards(self, game, pos):
+        self.add_points()
         pts = self.get_points()
         points = game.font.render(
             str(pts), True, game.white)
@@ -371,7 +374,7 @@ class Player:
         game.screen.blit(points, points_rect)
 
         name = game.font.render(
-            str(f"Player {self.number}"), True, game.white)
+            str(f"{self.name}"), True, game.white)
 
         name_rect = name.get_rect()
         name_rect.center = ((pos + 1) * game.screen_width //
@@ -540,17 +543,15 @@ class GameState:
         self.players = []
         for i in range(0, self.player_amount):
             bet = self.min_bet
-            self.player_nums[i+1] = Player(i+1, bet)
+            self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
             self.players.append(self.player_nums[i+1])
 
         for number in range(self.player_amount):
             player = self.players[number]
-            print(f"PLAYER: {player.number}")
             player.get_card(self.random_card_choice())
             player.get_card(self.random_card_choice())
             player = self.players[number]
             if number >= 0 and number < 2:
-                print(number)
                 player.display_player_cards(self, number + 1)
 
     def random_card_choice(self):
@@ -566,8 +567,9 @@ class GameState:
         player.get_card(self.random_card_choice())
 
     def display_game_over(self, text, number, color=(255, 255, 255)):
+        player = self.players[number]
         name = self.font.render(
-            str(f"Player {number + 1}"), True, self.white)
+            str(f"{player.name}"), True, self.white)
         name_rect = name.get_rect()
         name_rect.center = ((number + 1) * self.screen_width //
                             (self.player_amount + 1), 650)
@@ -582,7 +584,7 @@ class GameState:
         self.screen.blit(text, text_rect)
 
     def init_dealer(self):
-        self.dealer = Player('d', 0)
+        self.dealer = Player('d', 0, 'dealer')
         self.dealer.get_card(self.random_card_choice())
         self.dealer.get_card(self.random_card_choice())
 
@@ -656,7 +658,10 @@ class GameState:
             double_card_index = player.get_double_card_index()
             double_card = player.cards.pop(double_card_index)
             # how do you init player?
-            new_player = Player(player.number + .1, self.min_bet)
+            new_player = Player(player.number, self.min_bet,
+                                player.name + "-" + str(player.hand_amount))
+
+            player.hand_amount += 1
 
             new_player.cards = [double_card]
             # Will this insert work?
@@ -743,8 +748,9 @@ class GameState:
                         return False
 
     def display_count_down(self, number):
+        player = self.players[number]
         f = pygame.font.Font(None, 50)
-        count = f.render(f"Get ready Player {number + 1}!", True, self.white)
+        count = f.render(f"Get ready {player.name}!", True, self.white)
         count_rect = count.get_rect()
         count_rect.center = (self.screen_width - 200, 80)
 
@@ -788,12 +794,13 @@ class GameState:
         self.busted_players = []
 
         for number in range(self.player_amount):
+            print(self.player_amount)
             player = self.players[number]
             print(f"NEXT PLAYER {player.number+1}")
             self.render_cards_on_screen(number)
 
             turn = self.font.render(
-                f"YOUR TURN Player {player.number + 1}", True, (50, 50, 50))
+                f"YOUR TURN {player.name}", True, (50, 50, 50))
             turn_rect = turn.get_rect()
             turn_rect.center = (2 * self.screen_width //
                                 (self.max_cards_on_screen + 1), 450)
@@ -871,17 +878,17 @@ class GameState:
         self.values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
         self.sounds = {}
 
-        self.sounds['0'] = pygame.mixer.Sound("0.mp3")
-        self.sounds['1'] = pygame.mixer.Sound("1.mp3")
-        self.sounds['2'] = pygame.mixer.Sound("2.mp3")
-        self.sounds['3'] = pygame.mixer.Sound("3.mp3")
+        self.sounds['0'] = pygame.mixer.Sound("sounds/0.mp3")
+        self.sounds['1'] = pygame.mixer.Sound("sounds/1.mp3")
+        self.sounds['2'] = pygame.mixer.Sound("sounds/2.mp3")
+        self.sounds['3'] = pygame.mixer.Sound("sounds/3.mp3")
 
-        self.sounds['DETECT'] = pygame.mixer.Sound("DETECT.mp3")
-        self.sounds['FAKJOE'] = pygame.mixer.Sound("FAKJOE.mp3")
-        self.sounds['HIT'] = pygame.mixer.Sound("HIT.mp3")
-        self.sounds['PEACE'] = pygame.mixer.Sound("PEACE.mp3")
-        self.sounds['BUST'] = pygame.mixer.Sound("BUST.mp3")
-        self.sounds['CRASH'] = pygame.mixer.Sound("CRASH.mp3")
+        self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
+        self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
+        self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
+        self.sounds['PEACE'] = pygame.mixer.Sound("sounds/PEACE.mp3")
+        self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
+        self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
 
         self.clock = pygame.time.Clock()
         a = True
