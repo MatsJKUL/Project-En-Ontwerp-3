@@ -15,9 +15,49 @@ import mediapipe as mp
 
 from model import KeyPointClassifier
 
+import RPi.GPIO as GPIO
+import time
 
 DEBUG = False
 
+GPIO.setmode(GPIO.BCM) #setup motors
+servo1_pin = 14
+servo2_pin = 16
+dc1_pin = 17
+dc2_pin = 18
+GPIO.setup(servo1_pin, GPIO.OUT)
+GPIO.setup(servo2_pin, GPIO.OUT)
+GPIO.setup(dc1_pin, GPIO.OUT)
+GPIO.setup(dc2_pin, GPIO.OUT)
+pwm1 = GPIO.PWM(servo1_pin, 50)
+pwm1.start(0)
+pwm2 = GPIO.PWM(servo2_pin, 50)
+pwm2.start(0)
+
+def turn_servo1(angle):
+    duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
+    pwm1.ChangeDutyCycle(duty_cycle)
+    time.sleep(1)
+
+def turn_servo2(angle):
+    duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
+    pwm2.ChangeDutyCycle(duty_cycle)
+    time.sleep(1)
+def turn_dc1():
+    GPIO.output(dc1_pin, GPIO.HIGH)
+
+def stop_dc1():
+    GPIO.output(dc1_pin, GPIO.LOW)
+
+def turn_dc2():
+    GPIO.output(dc2_pin, GPIO.HIGH)
+
+def stop_dc2():
+    GPIO.output(dc2_pin, GPIO.LOW)
+def servo_stop():
+    pwm1.stop()  # Stop the PWM signal
+    pwm2.stop()  # Stop the PWM signal
+    GPIO.cleanup()  # Clean up the GPIO configuration
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -580,6 +620,7 @@ class GameState:
         return random_cards
 
     def hit(self, player):
+        turn_servo1(80)
         player.get_card(self.random_card_choice())
 
     def double(self, player):
@@ -933,6 +974,7 @@ class GameState:
 
         cap.release()
         pygame.quit()
+        servo_stop()
         quit()
 
 
