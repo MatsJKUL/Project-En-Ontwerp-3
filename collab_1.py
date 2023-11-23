@@ -604,10 +604,20 @@ class GameState:
             bet = self.min_bet
             self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
             self.players.append(self.player_nums[i+1])
-
+        angle = 270 / (self.player_amount + 1)
         for number in range(self.player_amount):
             player = self.players[number]
+            turn_dc2()
+            time.sleep(1)
+            stop_dc2()
             player.get_card(self.random_card_choice())
+            turn_servo1(angle)
+        turn_servo1(-self.player_amount*angle)
+        for number in range(self.player_amount):
+            player = self.players[number]
+            turn_dc2()
+            time.sleep(1)
+            stop_dc2()
             player.get_card(self.random_card_choice())
             player = self.players[number]
             if number >= 0 and number < 2:
@@ -620,10 +630,15 @@ class GameState:
         return random_cards
 
     def hit(self, player):
-        turn_servo1(80)
+        turn_dc2()
+        time.sleep(1)
+        stop_dc2()
         player.get_card(self.random_card_choice())
 
     def double(self, player):
+        turn_dc2()
+        time.sleep(1)
+        stop_dc2()
         player.get_card(self.random_card_choice())
 
     def display_game_over(self, text, number, color=(255, 255, 255)):
@@ -666,9 +681,14 @@ class GameState:
 
     def init_dealer(self):
         self.dealer = Player('d', 0, 'dealer')
+        turn_dc2()
+        time.sleep(1)
+        stop_dc2()
         self.dealer.get_card(self.random_card_choice())
+        turn_dc2()
+        time.sleep(1)
+        stop_dc2()
         self.dealer.get_card(self.random_card_choice())
-
         self.screen.blit(
             self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
         self.screen.blit(
@@ -743,8 +763,14 @@ class GameState:
                                     player.name + "-" + str(player.hand_amount))
                 player.hand_amount += 1
                 new_player.cards = [player.cards[1]]
+                turn_dc2()
+                time.sleep(1)
+                stop_dc2()
                 new_player.get_card(self.random_card_choice())
                 player.cards = [player.cards[0]]
+                turn_dc2()
+                time.sleep(1)
+                stop_dc2()
                 player.get_card(self.random_card_choice())
                 # Will this insert work?
                 self.players.insert(
@@ -862,15 +888,15 @@ class GameState:
 
     def run_game(self):
         self.init_game()
+        turn_dc1()
         self.busted_players = []
         number = 0
+        angle = 270/self.player_amount
         while True:
             if number < self.player_amount:
-                print(self.player_amount)
                 player = self.players[number]
                 print(f"NEXT PLAYER {player.number+1}")
                 self.render_cards_on_screen(number)
-
                 turn = self.font.render(
                     f"YOUR TURN {player.name}", True, (50, 50, 50))
                 turn_rect = turn.get_rect()
@@ -891,6 +917,7 @@ class GameState:
                 pygame.display.update()
                 self.clock.tick(30)
                 pygame.draw.rect(self.screen, self.background, turn_rect)
+                turn_servo1(angle)
                 number += 1
             else:
                 break
@@ -918,6 +945,9 @@ class GameState:
             elif dealer_score >= 17:
                 dealer_takes_card = False
             else:
+                turn_dc2()
+                time.sleep(1)
+                stop_dc2()
                 self.dealer.get_card(self.random_card_choice())
                 self.screen.blit(self.card_images[self.dealer.get_card_by_index(-1)],
                                  (550 + (self.dealer.get_card_amount() - 1) * 30, 30))
@@ -971,7 +1001,7 @@ class GameState:
         while a:
             self.run_game()
             a = self.again_screen()
-
+        stop_dc1()
         cap.release()
         pygame.quit()
         servo_stop()
