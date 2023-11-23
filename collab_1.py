@@ -7,7 +7,6 @@ import csv
 import copy
 import argparse
 import itertools
-from tts import tts
 
 import cv2 as cv
 import numpy as np
