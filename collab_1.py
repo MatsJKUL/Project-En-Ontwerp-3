@@ -34,8 +34,10 @@ pwm2 = GPIO.PWM(servo2_pin, 50)
 pwm2.start(0)
 
 def turn_servo1(angle):
-    duty_cycle = 10 * angle / 270  # Map the angle to the duty cycle
-    pwm1.ChangeDutyCycle(duty_cycle)
+    for i in range(1, 6):
+        duty_cycle = 2.5 + 10 * angle/5*i / 270  # Map the angle to the duty cycle
+        pwm1.ChangeDutyCycle(duty_cycle)
+        time.sleep(.1)
     time.sleep(1)
 
 def turn_servo2(angle):
