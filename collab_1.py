@@ -521,7 +521,7 @@ class GameState:
 
     def start_game(self):
         player_amount = 1
-
+        turn_dc1()
         self.max_cards_on_screen = 3
 
         while True:
@@ -901,7 +901,6 @@ class GameState:
 
     def run_game(self):
         self.init_game()
-        turn_dc1()
         self.busted_players = []
         number = 0
         angle = 270/self.player_amount
@@ -1021,5 +1020,11 @@ class GameState:
         servo_stop()
         quit()
 
-
-GameState()
+if __name__ == '__main__':
+    try:
+        GameState()
+    except:
+        cap.release()
+        pygame.quit()
+        servo_stop()
+        stop_dc1()
