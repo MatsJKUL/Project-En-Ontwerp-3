@@ -41,24 +41,27 @@ class CardDetector():
             'K': cv2.imread(os.path.join(self.image_folder, 'king.jpg'), cv2.IMREAD_GRAYSCALE),
             'A': cv2.imread(os.path.join(self.image_folder, 'ace.jpg'), cv2.IMREAD_GRAYSCALE),
         }
-    def rotate_frame(self, frame ):
-        imgray = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)[...,0]
-        ret, thresh = cv2.threshold(imgray, 20, 255, cv2.THRESH_BINARY|cv2.THRESH_OTSU)
+
+    def rotate_frame(self, frame):
+        imgray = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)[..., 0]
+        ret, thresh = cv2.threshold(
+            imgray, 20, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
         mask = 255 - thresh
-        _, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        _, contours, _ = cv2.findContours(
+            mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         maxArea = 0
         best = None
         for contour in contours:
-          area = cv2.contourArea(contour)
-          if area > maxArea :
-            maxArea = area
-            best = contour
+            area = cv2.contourArea(contour)
+            if area > maxArea:
+                maxArea = area
+                best = contour
 
         rect = cv2.minAreaRect(best)
         box = cv2.boxPoints(rect)
         box = np.int0(box)
 
-        #crop image inside bounding box
+        # crop image inside bounding box
         scale = 1  # cropping margin, 1 == no margin
         W = rect[1][0]
         H = rect[1][1]
@@ -90,7 +93,6 @@ class CardDetector():
         image = cv2.getRectSubPix(
             cropped, (int(croppedW*scale), int(croppedH*scale)), (size[0]/2, size[1]/2))
         return image
-
 
     def process_frame(self, frame, card_counter, show_frame=0):
 
@@ -309,15 +311,12 @@ def main():
 
     score_face_dict = {}
     score_value_dict = {}
-
+    camera_detection = camera.capture_continuous(
+        raw_capture, format="bgr", use_video_port=True)
+    time.sleep(0.5)
     while True:
-
-        ret, frame = cap.read()
-        # frame = cv2.imread('./data/diamonds5.jpg')
-        if not ret:
-            print("HOER")
-            break
-        print("READ")
+        raw_capture.truncate(0)
+        frame = camera_detection[-1]
 
         got_card, card = card_class.process_frame(frame, SHOW_FRAME)
 
@@ -444,5 +443,13 @@ def decode_img_file_name(n):
         face += c
 
     return face.lower(), value
+
+camera = PiCamera()
+camera.resolution = (640, 480)
+camera.framerate = 32
+raw_capture = PiRGBArray(camera, size=(640, 480))
+
+# let camera module warm up
+time.sleep(0.1)
 
 main()
