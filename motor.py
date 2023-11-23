@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import time
 
 GPIO.setmode(GPIO.BCM)  # Set the GPIO mode to use the BCM numbering
-servo_pin = 16           # The GPIO pin connected to the servo
+servo_pin = 14          # The GPIO pin connected to the servo
 GPIO.setup(servo_pin, GPIO.OUT)
 
 # Create a PWM object with a frequency of 50 Hz
