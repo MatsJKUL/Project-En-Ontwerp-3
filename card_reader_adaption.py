@@ -3,6 +3,7 @@ import os
 import numpy as np
 import time
 import sys
+import picamera2
 
 CAMERA = 0
 MIN_AREA = 50000
@@ -145,7 +146,7 @@ class CardDetector():
 
                 card = cardit[0:125, 0: 100]
 
-                # cv2.imshow("card", card)
+                cv2.imshow("card", card)
 
         if show_frame:
             cv2.imshow("Frame", frame)
@@ -276,7 +277,7 @@ class CardDetector():
         if (frame.shape[0]*frame.shape[1] < 5000):
             return
 
-        frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
+        #frame = cv2.bilateralFilter(frame, d=9, sigmaColor=75, sigmaSpace=75)
 
         # Convert the frame to grayscale
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -296,6 +297,7 @@ class CardDetector():
 
 
 def main():
+    '''
     for i, arg in enumerate(sys.argv):
         if i == 0:
             print("GETCAM")
@@ -305,19 +307,16 @@ def main():
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
-
+    '''
     img_index = 0
     card_class = CardDetector()
 
     score_face_dict = {}
     score_value_dict = {}
-    camera_detection = camera.capture_continuous(
-        raw_capture, format="bgr", use_video_port=True)
-    time.sleep(0.5)
     while True:
-        raw_capture.truncate(0)
-        frame = camera_detection[-1]
-
+        frame = camera.capture_array()
+        cv2.imshow("moeder", frame)
+   
         got_card, card = card_class.process_frame(frame, SHOW_FRAME)
 
         if got_card:
@@ -444,10 +443,9 @@ def decode_img_file_name(n):
 
     return face.lower(), value
 
-camera = PiCamera()
-camera.resolution = (640, 480)
-camera.framerate = 32
-raw_capture = PiRGBArray(camera, size=(640, 480))
+camera = picamera2.Picamera2()
+camera.configure(camera.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
+camera.start()
 
 # let camera module warm up
 time.sleep(0.1)
