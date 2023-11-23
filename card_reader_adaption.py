@@ -295,10 +295,10 @@ class CardDetector():
 
 def main():
     for i, arg in enumerate(sys.argv):
-        if i == 1:
+        if i == 0:
             print("GETCAM")
 
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         print("Cannot open camera")
@@ -315,7 +315,9 @@ def main():
         ret, frame = cap.read()
         # frame = cv2.imread('./data/diamonds5.jpg')
         if not ret:
+            print("HOER")
             break
+        print("READ")
 
         got_card, card = card_class.process_frame(frame, SHOW_FRAME)
 
@@ -443,5 +445,4 @@ def decode_img_file_name(n):
 
     return face.lower(), value
 
-
-test_images()
+main()
