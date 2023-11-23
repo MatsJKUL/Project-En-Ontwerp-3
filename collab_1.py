@@ -615,21 +615,21 @@ class GameState:
         for number in range(self.player_amount):
             player = self.players[number]
             turn_dc2()
-            time.sleep(1)
+            time.sleep(2)
             stop_dc2()
             player.get_card(self.random_card_choice())
             turn_servo1(angle*number)
         turn_servo1(270)
         self.dealer = Player('d', [], 'dealer')
         turn_dc2()
-        time.sleep(1)
+        time.sleep(2)
         stop_dc2()
         self.dealer.get_card(self.random_card_choice())
         turn_servo1(0)
         for number in range(self.player_amount):
             player = self.players[number]
             turn_dc2()
-            time.sleep(1)
+            time.sleep(2)
             stop_dc2()
             player.get_card(self.random_card_choice())
             turn_servo1(angle * number)
@@ -639,7 +639,7 @@ class GameState:
         turn_servo1(270)
         self.dealer.get_card(self.random_card_choice())
         turn_dc2()
-        time.sleep(1)
+        time.sleep(2)
         stop_dc2()
         turn_servo1(0)
 
@@ -651,13 +651,13 @@ class GameState:
 
     def hit(self, player):
         turn_dc2()
-        time.sleep(1)
+        time.sleep(2)
         stop_dc2()
         player.get_card(self.random_card_choice())
 
     def double(self, player):
         turn_dc2()
-        time.sleep(1)
+        time.sleep(2)
         stop_dc2()
         player.get_card(self.random_card_choice())
 
@@ -776,12 +776,12 @@ class GameState:
                 player.hand_amount += 1
                 new_player.cards = [player.cards[1]]
                 turn_dc2()
-                time.sleep(1)
+                time.sleep(2)
                 stop_dc2()
                 new_player.get_card(self.random_card_choice())
                 player.cards = [player.cards[0]]
                 turn_dc2()
-                time.sleep(1)
+                time.sleep(2)
                 stop_dc2()
                 player.get_card(self.random_card_choice())
                 # Will this insert work?
@@ -958,7 +958,7 @@ class GameState:
                 dealer_takes_card = False
             else:
                 turn_dc2()
-                time.sleep(1)
+                time.sleep(2)
                 stop_dc2()
                 self.dealer.get_card(self.random_card_choice())
                 self.screen.blit(self.card_images[self.dealer.get_card_by_index(-1)],
