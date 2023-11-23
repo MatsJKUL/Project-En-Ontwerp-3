@@ -352,7 +352,8 @@ class Player:
         self.hand_amount = 1
 
     def get_inzet(self):
-        return self.bet
+        return sum(self.bet)
+
 
     def get_card(self, card):
         self.cards.append(card)
@@ -404,11 +405,18 @@ class Player:
 
     def get_winst(self):
         if self.state == 'BUSTED':
-            return -self.bet
+            return -self.get_inzet()
         elif self.state == 'PUSH':
             return 0
         elif self.state == 'WIN':
-            return 2*self.bet
+            for i in self.bet:
+                if i == 10:
+                    turn_servo2(0)
+                    turn_servo2(90)
+                if i == 5:
+                    turn_servo2(180)
+                    turn_servo2(90)
+            return 2*self.get_inzet()
 
     def display_player_cards(self, game, pos):
         self.add_points()
@@ -610,17 +618,30 @@ class GameState:
             time.sleep(1)
             stop_dc2()
             player.get_card(self.random_card_choice())
-            turn_servo1(angle)
-        turn_servo1(-self.player_amount*angle)
+            turn_servo1(angle*number)
+        turn_servo1(270)
+        self.dealer = Player('d', [], 'dealer')
+        turn_dc2()
+        time.sleep(1)
+        stop_dc2()
+        self.dealer.get_card(self.random_card_choice())
+        turn_servo1(0)
         for number in range(self.player_amount):
             player = self.players[number]
             turn_dc2()
             time.sleep(1)
             stop_dc2()
             player.get_card(self.random_card_choice())
+            turn_servo1(angle * number)
             player = self.players[number]
             if number >= 0 and number < 2:
                 player.display_player_cards(self, number + 1)
+        turn_servo1(270)
+        self.dealer.get_card(self.random_card_choice())
+        turn_dc2()
+        time.sleep(1)
+        stop_dc2()
+        turn_servo1(0)
 
     def random_card_choice(self):
         random_cards = random.choice(list(self.cards))
@@ -679,14 +700,6 @@ class GameState:
         self.screen.blit(winst, winst_rect)
 
     def init_dealer(self):
-        self.dealer = Player('d', 0, 'dealer')
-        turn_dc2()
-        time.sleep(1)
-        stop_dc2()
-        self.dealer.get_card(self.random_card_choice())
-        turn_dc2()
-        time.sleep(1)
-        stop_dc2()
         self.dealer.get_card(self.random_card_choice())
         self.screen.blit(
             self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
@@ -916,9 +929,10 @@ class GameState:
                 pygame.display.update()
                 self.clock.tick(30)
                 pygame.draw.rect(self.screen, self.background, turn_rect)
-                turn_servo1(angle)
+                turn_servo1(angle*number)
                 number += 1
             else:
+                turn_servo1(270)
                 break
         # self.dealer game
         dealer_takes_card = True
@@ -970,7 +984,7 @@ class GameState:
         self.font = pygame.font.Font(None, 36)
         self.background = (1, 150, 32)
 
-        self.min_bet = 1
+        self.min_bet = [5]
         self.screen = pygame.display.set_mode(
             (self.screen_width, self.screen_height))
         pygame.display.set_caption("Blackjack self.cards")
