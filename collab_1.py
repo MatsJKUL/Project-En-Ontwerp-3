@@ -1,5 +1,4 @@
 import pygame
-import time
 from pygame.locals import *
 import os
 import random
@@ -7,19 +6,15 @@ import csv
 import copy
 import argparse
 import itertools
-from tts import tts
-
 import cv2 as cv
 import numpy as np
 import mediapipe as mp
-
 from model import KeyPointClassifier
-
 import RPi.GPIO as GPIO
 import time
-
 DEBUG = False
 
+####################    MOTOR   ##########################
 GPIO.setmode(GPIO.BCM) #setup motors
 servo1_pin = 14
 servo2_pin = 16
@@ -59,6 +54,14 @@ def servo_stop():
     pwm2.stop()  # Stop the PWM signal
     GPIO.cleanup()  # Clean up the GPIO configuration
 
+def shoot_card():
+    turn_dc2()
+    time.sleep(1.5)
+    stop_dc2()
+####################    MOTOR   ##########################
+
+
+####################    HAND RECOGNISION   ##########################
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -107,7 +110,6 @@ hands = mp_hands.Hands(
 
 keypoint_classifier = KeyPointClassifier()
 
-# Read labels ###########################################################
 with open('model/keypoint_classifier/keypoint_classifier_label.csv',
           encoding='utf-8-sig') as f:
     keypoint_classifier_labels = csv.reader(f)
@@ -120,7 +122,6 @@ def recognise_hand():
     icount = 0
     while True:
         if DEBUG:
-            print("RESET")
         hand_sign_id = None
         for i in range(5):
             cap.grab()
@@ -130,7 +131,6 @@ def recognise_hand():
 
         icount += 1
         if DEBUG:
-            print("COUNT", icount)
         image = cv.flip(image, 1)  # Mirror display
 
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
@@ -339,7 +339,9 @@ def draw_info(image, fps, mode, number):
                        cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
                        cv.LINE_AA)
     return image
+####################    HAND RECOGNISION   ##########################
 
+####################    PLAYER   ##########################
 
 class Player:
     def __init__(self, num, bet, name):
@@ -352,7 +354,7 @@ class Player:
         self.add_points()
         self.hand_amount = 1
 
-    def get_inzet(self):
+    def get_total_bet(self):
         return sum(self.bet)
 
 
@@ -406,7 +408,7 @@ class Player:
 
     def get_winst(self):
         if self.state == 'BUSTED':
-            return -self.get_inzet()
+            return -self.get_total_bet()
         elif self.state == 'PUSH':
             return 0
         elif self.state == 'WIN':
@@ -417,7 +419,7 @@ class Player:
                 if i == 5:
                     turn_servo2(180)
                     turn_servo2(90)
-            return 2*self.get_inzet()
+            return 2*self.get_total_bet()
 
     def display_player_cards(self, game, pos):
         self.add_points()
@@ -451,9 +453,53 @@ class Player:
 
         pygame.display.update()
         game.clock.tick(30)
+####################    PLAYER   ##########################
 
 
 class GameState:
+    ####################    INITIALISING   ##########################
+    def __init__(self):
+        pygame.init()
+
+        self.screen_width, self.screen_height = 1200, 800
+        self.font = pygame.font.Font(None, 36)
+        self.background = (1, 150, 32)
+
+        self.min_bet = [5]
+        self.screen = pygame.display.set_mode(
+            (self.screen_width, self.screen_height))
+        pygame.display.set_caption("Blackjack self.cards")
+
+        self.white = (255, 255, 255)
+        self.black = (0, 0, 0)
+
+        self.faces = ["h", "d", "c", "s"]
+        self.values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        self.sounds = {}
+
+        self.sounds['0'] = pygame.mixer.Sound("sounds/0.mp3")
+        self.sounds['1'] = pygame.mixer.Sound("sounds/1.mp3")
+        self.sounds['2'] = pygame.mixer.Sound("sounds/2.mp3")
+        self.sounds['3'] = pygame.mixer.Sound("sounds/3.mp3")
+
+        self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
+        self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
+        self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
+        self.sounds['DOUBLE'] = pygame.mixer.Sound("sounds/DOUBLE.mp3")
+        self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
+        self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
+        self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
+
+        self.clock = pygame.time.Clock()
+        a = True
+        while a:
+            self.run_game()
+            a = self.display_again_screen()
+        stop_dc1()
+        cap.release()
+        pygame.quit()
+        servo_stop()
+        quit()
     def init_cards(self):
         self.card_images = {}
         self.cards = []
@@ -471,7 +517,45 @@ class GameState:
         self.back = 'back'
         self.card_images[(self.back, self.back)] = pygame.image.load(
             os.path.join(card_path, f'{self.back}.png'))
+    def init_players(self):
+        self.player_nums = {}
+        self.players = []
+        for i in range(0, self.player_amount):
+            bet = self.min_bet
+            self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
+            self.players.append(self.player_nums[i+1])
+        angle = 270 / (self.player_amount + 1)
+        for number in range(self.player_amount):
+            player = self.players[number]
+            shoot_card()
+            player.get_card(self.random_card_choice())
+            turn_servo1(angle*number)
+        turn_servo1(270)
+        self.dealer = Player('d', [], 'dealer')
+        shoot_card()
+        self.dealer.get_card(self.random_card_choice())
+        turn_servo1(0)
+        for number in range(self.player_amount):
+            player = self.players[number]
+            shoot_card()
+            player.get_card(self.random_card_choice())
+            turn_servo1(angle * number)
+            player = self.players[number]
+            if number >= 0 and number < 2:
+                player.display_player_cards(self, number + 1)
+        turn_servo1(270)
+        self.dealer.get_card(self.random_card_choice())
+        shoot_card()
+        turn_servo1(0)
+    def init_dealer(self):
+        self.dealer.get_card(self.random_card_choice())
+        self.screen.blit(
+            self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
+        self.screen.blit(
+            self.card_images[(self.back, self.back)], (580, 30))
 
+        pygame.display.update()
+        self.clock.tick(30)
     def init_buttons(self):
         self.play_button = self.font.render("Play", True, self.white)
         self.button_hit = self.font.render("Hit", True, self.white)
@@ -505,23 +589,8 @@ class GameState:
 
         self.min_bet_rect.center = (125, 40)
 
-    def get_num(self, event):
-        if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7] and event.unicode.isdigit():
-
-            return int(event.unicode)
-
-    def display_player_number(self, player_amount):
-        text = self.font.render("How many players: " +
-                                str(player_amount), True, self.white)
-        text_rect = text.get_rect()
-        text_rect.center = (self.screen_width // 2,
-                            self.screen_height // 2 + 50)
-        self.screen.blit(text, text_rect)
-        pygame.display.update()
-
-    def start_game(self):
+    def game_options(self):
         player_amount = 1
-        turn_dc1()
         self.max_cards_on_screen = 3
 
         while True:
@@ -542,17 +611,110 @@ class GameState:
                     return
 
                 elif event.type == pygame.KEYDOWN:
-                    key = self.get_num(event)
+                    key = self.get_number_of_players(event)
 
                     if key is not None and type(key) == int:
                         player_amount = key
 
             self.display_player_number(player_amount)
+    def init_game(self):
+        print("BUTTONS")
+        self.init_buttons()
+        print("IMAGES")
+        self.init_cards()
+        print("HOME")
+        self.game_options()
+        self.screen.fill(self.background)
+        print("STARTING")
+        turn_dc1()
+        self.init_players()
+        print("DEALER")
+        self.init_dealer()
+        self.screen.blit(self.min_bet_txt, self.min_bet_rect)
+        pygame.display.update()
+        self.clock.tick(30)
+    ####################    INITIALISING   ##########################
 
-    def calc_next_card_pos(self, player, player_num):
-        return (player_num + 1) * self.screen_width // (self.max_cards_on_screen + 1) + (player.get_card_amount() - 1) * 30 - 60
+    ####################    POSSIBLE MOVES   ##########################
+    def handle_move(self, move, player, pos):
+        if move == 'OK':
+            print("RUNNING HIT")
+            self.render_hit(player, pos)
+            player_points = player.get_points()
 
+            if player_points > 21:
+                self.render_bust(pos)
+                time.sleep(.5)
+                pygame.mixer.Sound.play(self.sounds["BUST"])
+                pygame.mixer.Sound.play(self.sounds["CRASH"])
+                self.busted_players.append(player)
+                return "STOP"
+            else:
+                return "CONTINUE"
+        elif move == "Fakjoe":
+            if player.cards[0][1] != player.cards[1][1] and len(player.cards) == 2:
+                move = recognise_hand()
+                return self.handle_move(move, player, pos)
+            else:
+                new_player = Player(player.number, self.min_bet,
+                                    player.name + "-" + str(player.hand_amount))
+                player.hand_amount += 1
+                new_player.cards = [player.cards[1]]
+                shoot_card()
+                new_player.get_card(self.random_card_choice())
+                player.cards = [player.cards[0]]
+                shoot_card()
+                player.get_card(self.random_card_choice())
+                self.players.insert(
+                    player.number + player.hand_amount - 2, new_player)
+                self.player_amount += 1
+                self.render_cards_on_screen(player.number - 1)
+
+        elif move == 'closed':
+            self.render_double(player, pos)
+            player_points = player.get_points()
+
+            if player_points > 21:
+                self.render_bust(pos)
+                time.sleep(.5)
+                pygame.mixer.Sound.play(self.sounds["BUST"])
+                pygame.mixer.Sound.play(self.sounds["CRASH"])
+                self.busted_players.append(player)
+            return "STOP"
+
+        elif move.upper() == 'PEACE':
+            self.render_move("STAND")
+            return 'STOP'
+
+    def hit(self,player):
+        shoot_card()
+        player.get_card(self.random_card_choice())
+
+    def double(self,player):
+        shoot_card()
+        player.get_card(self.random_card_choice())
+    ####################    POSSIBLE MOVES   ##########################
+
+
+    ####################    DISPLAYS    ##########################
+    def render_move(self, txt): #displays the chosen move
+        pygame.mixer.music.stop()
+        f = pygame.font.Font(None, 50)
+        hit_popup = f.render(txt, True, (255, 0, 0))
+        hit_popup_rect = hit_popup.get_rect()
+        hit_popup_rect.center = (
+            int(self.screen_width/2), int(self.screen_height/2))
+
+        pygame.draw.rect(
+            self.screen, self.background, hit_popup_rect)
+        self.screen.blit(hit_popup, hit_popup_rect)
+
+        pygame.display.update()
+        self.clock.tick(30)
+
+        pygame.mixer.Sound.play(self.sounds[txt.upper()])
     def render_hit(self, player, pos):
+        self.hit(player)
         points = self.font.render(str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
@@ -567,10 +729,10 @@ class GameState:
         self.screen.blit(points, points_rect)
 
         self.render_move("HIT")
-
         pygame.display.update()
         self.clock.tick(30)
     def render_double(self,player, pos):
+        self.double(player)
         points = self.font.render(str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
@@ -588,80 +750,14 @@ class GameState:
 
         pygame.display.update()
         self.clock.tick(30)
-    def render_move(self, txt):
-        pygame.mixer.music.stop()
-        f = pygame.font.Font(None, 50)
-        hit_popup = f.render(txt, True, (255, 0, 0))
-        hit_popup_rect = hit_popup.get_rect()
-        hit_popup_rect.center = (
-            int(self.screen_width/2), int(self.screen_height/2))
-
-        pygame.draw.rect(
-            self.screen, self.background, hit_popup_rect)
-        self.screen.blit(hit_popup, hit_popup_rect)
-
+    def display_player_number(self, player_amount):
+        text = self.font.render("How many players: " +
+                                str(player_amount), True, self.white)
+        text_rect = text.get_rect()
+        text_rect.center = (self.screen_width // 2,
+                            self.screen_height // 2 + 50)
+        self.screen.blit(text, text_rect)
         pygame.display.update()
-        self.clock.tick(30)
-
-        pygame.mixer.Sound.play(self.sounds[txt.upper()])
-
-    def init_players(self):
-        self.player_nums = {}
-        self.players = []
-        for i in range(0, self.player_amount):
-            bet = self.min_bet
-            self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
-            self.players.append(self.player_nums[i+1])
-        angle = 270 / (self.player_amount + 1)
-        for number in range(self.player_amount):
-            player = self.players[number]
-            turn_dc2()
-            time.sleep(1.5)
-            stop_dc2()
-            player.get_card(self.random_card_choice())
-            turn_servo1(angle*number)
-        turn_servo1(270)
-        self.dealer = Player('d', [], 'dealer')
-        turn_dc2()
-        time.sleep(1.5)
-        stop_dc2()
-        self.dealer.get_card(self.random_card_choice())
-        turn_servo1(0)
-        for number in range(self.player_amount):
-            player = self.players[number]
-            turn_dc2()
-            time.sleep(1.5)
-            stop_dc2()
-            player.get_card(self.random_card_choice())
-            turn_servo1(angle * number)
-            player = self.players[number]
-            if number >= 0 and number < 2:
-                player.display_player_cards(self, number + 1)
-        turn_servo1(270)
-        self.dealer.get_card(self.random_card_choice())
-        turn_dc2()
-        time.sleep(1.5)
-        stop_dc2()
-        turn_servo1(0)
-
-    def random_card_choice(self):
-        random_cards = random.choice(list(self.cards))
-        self.cards.remove(random_cards)
-        self.deleted_cards.append(random_cards)
-        return random_cards
-
-    def hit(self, player):
-        turn_dc2()
-        time.sleep(1.5)
-        stop_dc2()
-        player.get_card(self.random_card_choice())
-
-    def double(self, player):
-        turn_dc2()
-        time.sleep(1.5)
-        stop_dc2()
-        player.get_card(self.random_card_choice())
-
     def display_game_over(self, text, number, color=(255, 255, 255)):
         player = self.players[number]
         name = self.font.render(
@@ -700,33 +796,6 @@ class GameState:
             (number + 1) * self.screen_width // (self.player_amount + 1) + 30, 550)
         self.screen.blit(winst, winst_rect)
 
-    def init_dealer(self):
-        self.dealer.get_card(self.random_card_choice())
-        self.screen.blit(
-            self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
-        self.screen.blit(
-            self.card_images[(self.back, self.back)], (580, 30))
-
-        pygame.display.update()
-        self.clock.tick(30)
-
-    def init_game(self):
-        print("BUTTONS")
-        self.init_buttons()
-        print("IMAGES")
-        self.init_cards()
-        print("HOME")
-        self.start_game()
-        self.screen.fill(self.background)
-        print("STARTING")
-        self.init_players()
-        print("DEALER")
-        self.init_dealer()
-
-        self.screen.blit(self.min_bet_txt, self.min_bet_rect)
-        pygame.display.update()
-        self.clock.tick(30)
-
     def render_bust(self, pos):
         busted = self.font.render(
             "BUSTED", True, (255, 50, 50))
@@ -738,7 +807,6 @@ class GameState:
         self.clock.tick(30)
 
     def clear_move(self):
-        print("CLEAR")
         f = pygame.font.Font(None, 50)
         clear = f.render("AAAAAAAAAAAAAAAAAAAAAAAAAAA",
                          True, self.background)
@@ -751,65 +819,6 @@ class GameState:
         self.screen.blit(clear, clear_rect)
         pygame.display.update()
 
-    def handle_move(self, move, player, pos):
-        if move == 'OK':
-            print("RUNNING HIT")
-            self.hit(player)
-            self.render_hit(player, pos)
-            player_points = player.get_points()
-
-            if player_points > 21:
-                self.render_bust(pos)
-                time.sleep(.5)
-                pygame.mixer.Sound.play(self.sounds["BUST"])
-                pygame.mixer.Sound.play(self.sounds["CRASH"])
-                self.busted_players.append(player)
-                return "STOP"
-            else:
-                return "CONTINUE"
-        elif move == "Fakjoe":
-            if player.cards[0][1] != player.cards[1][1] and len(player.cards) == 2:
-                move = recognise_hand()
-                return self.handle_move(move, player, pos)
-            else:
-                new_player = Player(player.number, self.min_bet,
-                                    player.name + "-" + str(player.hand_amount))
-                player.hand_amount += 1
-                new_player.cards = [player.cards[1]]
-                turn_dc2()
-                time.sleep(1.5)
-                stop_dc2()
-                new_player.get_card(self.random_card_choice())
-                player.cards = [player.cards[0]]
-                turn_dc2()
-                time.sleep(1.5)
-                stop_dc2()
-                player.get_card(self.random_card_choice())
-                # Will this insert work?
-                self.players.insert(
-                    player.number + player.hand_amount - 2, new_player)
-                print(self.players)
-                # check good render
-                self.player_amount += 1
-                self.render_cards_on_screen(player.number - 1)
-
-        elif move == 'closed':
-            print('double')
-            self.double(player)
-            self.render_double(player, pos)
-            player_points = player.get_points()
-
-            if player_points > 21:
-                self.render_bust(pos)
-                time.sleep(.5)
-                pygame.mixer.Sound.play(self.sounds["BUST"])
-                pygame.mixer.Sound.play(self.sounds["CRASH"])
-                self.busted_players.append(player)
-            return "STOP"
-
-        elif move.upper() == 'PEACE':
-            self.render_move("STAND")
-            return 'STOP'
 
     def clear_cards(self):
         rect = pygame.Rect((150, 400), (self.screen_width - 300, 350))
@@ -838,7 +847,7 @@ class GameState:
                 player = self.players[number + i]
                 player.display_player_cards(self, i + 1)
 
-    def again_screen(self):
+    def display_again_screen(self):
         self.screen.blit(self.button_again, self.again_rect)
         self.screen.blit(self.button_stop, self.stop_rect)
         pygame.display.update()
@@ -875,7 +884,6 @@ class GameState:
         self.clear_cards()
         dealer_score = self.dealer.get_points()
         for number in range(self.player_amount):
-            print(f"number {number}")
             player = self.players[number]
             player_score = player.get_points()
 
@@ -898,6 +906,21 @@ class GameState:
                 self.display_game_over("YOU LOST", number)
         pygame.display.update()
         self.clock.tick(30)
+    ####################    DISPLAYS    ##########################
+
+    ####################    HELPER FUNCTIONS    ##########################
+    def calc_next_card_pos(self, player, player_num):
+        return (player_num + 1) * self.screen_width // (self.max_cards_on_screen + 1) + (player.get_card_amount() - 1) * 30 - 60
+
+    def random_card_choice(self):
+        random_cards = random.choice(list(self.cards))
+        self.cards.remove(random_cards)
+        self.deleted_cards.append(random_cards)
+        return random_cards
+    def get_number_of_players(self, event):
+        if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7] and event.unicode.isdigit():
+            return int(event.unicode)
+    ####################    HELPER FUNCTIONS    ##########################
 
     def run_game(self):
         self.init_game()
@@ -907,7 +930,6 @@ class GameState:
         while True:
             if number < self.player_amount:
                 player = self.players[number]
-                print(f"NEXT PLAYER {player.number+1}")
                 self.render_cards_on_screen(number)
                 turn = self.font.render(
                     f"YOUR TURN {player.name}", True, (50, 50, 50))
@@ -919,7 +941,6 @@ class GameState:
                 self.clock.tick(30)
                 play = "CONTINUE"
                 while play != "STOP":
-                    print("fuclk")
                     self.display_count_down(number)
                     move = recognise_hand()
                     play = self.handle_move(move, player, 1)
@@ -934,7 +955,6 @@ class GameState:
             else:
                 turn_servo1(270)
                 break
-        # self.dealer game
         dealer_takes_card = True
         self.screen.blit(
             self.card_images[self.dealer.get_card_by_index(1)], (580, 30))
@@ -958,9 +978,7 @@ class GameState:
             elif dealer_score >= 17:
                 dealer_takes_card = False
             else:
-                turn_dc2()
-                time.sleep(1.5)
-                stop_dc2()
+                shoot_card()
                 self.dealer.get_card(self.random_card_choice())
                 self.screen.blit(self.card_images[self.dealer.get_card_by_index(-1)],
                                  (550 + (self.dealer.get_card_amount() - 1) * 30, 30))
@@ -970,55 +988,11 @@ class GameState:
                 points_rect.center = (600, 180)
                 pygame.draw.rect(self.screen, self.background, points_rect)
                 self.screen.blit(points, points_rect)
-                dealer_score = self.dealer.get_points()
 
             pygame.display.update()
             self.clock.tick(30)
 
         self.display_score()
-
-    def __init__(self):
-        pygame.init()
-
-        self.screen_width, self.screen_height = 1200, 800
-        self.font = pygame.font.Font(None, 36)
-        self.background = (1, 150, 32)
-
-        self.min_bet = [5]
-        self.screen = pygame.display.set_mode(
-            (self.screen_width, self.screen_height))
-        pygame.display.set_caption("Blackjack self.cards")
-
-        self.white = (255, 255, 255)
-        self.black = (0, 0, 0)
-
-        self.faces = ["h", "d", "c", "s"]
-        self.values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-        self.sounds = {}
-
-        self.sounds['0'] = pygame.mixer.Sound("sounds/0.mp3")
-        self.sounds['1'] = pygame.mixer.Sound("sounds/1.mp3")
-        self.sounds['2'] = pygame.mixer.Sound("sounds/2.mp3")
-        self.sounds['3'] = pygame.mixer.Sound("sounds/3.mp3")
-
-        self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
-        self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
-        self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
-        self.sounds['DOUBLE'] = pygame.mixer.Sound("sounds/DOUBLE.mp3")
-        self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
-        self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
-        self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
-
-        self.clock = pygame.time.Clock()
-        a = True
-        while a:
-            self.run_game()
-            a = self.again_screen()
-        stop_dc1()
-        cap.release()
-        pygame.quit()
-        servo_stop()
-        quit()
 
 if __name__ == '__main__':
     try:
