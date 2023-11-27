@@ -1092,7 +1092,7 @@ class GameState:
             self.clock.tick(30)
 
         self.display_score()
-#ik haat mijn leven
+#ik haat mij
 if __name__ == '__main__':
     try:
         GameState()
