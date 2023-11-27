@@ -121,7 +121,6 @@ with open('model/keypoint_classifier/keypoint_classifier_label.csv',
 def recognise_hand():
     icount = 0
     while True:
-        if DEBUG:
         hand_sign_id = None
         for i in range(5):
             cap.grab()
@@ -130,7 +129,6 @@ def recognise_hand():
             continue
 
         icount += 1
-        if DEBUG:
         image = cv.flip(image, 1)  # Mirror display
 
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
@@ -494,7 +492,9 @@ class GameState:
         self.sounds['tutorial_split'] = pygame.mixer.Sound("sounds/tutorial_split.mp3")
         self.sounds['tutorial_end'] = pygame.mixer.Sound("sounds/tutorial_end.mp3")
 
+        self.max_cards_on_screen = 3
         self.clock = pygame.time.Clock()
+        self.init_buttons()
         play_game = self.game_or_tutorial()
         while play_game:
             self.run_game()
@@ -612,13 +612,18 @@ class GameState:
                     break
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if self.game_rect.collidepoint(event.pos):
+                        pygame.display.flip()
+                        pygame.display.update()
+
                         return True
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if self.tutorial_rect.collidepoint(event.pos):
+                    elif self.tutorial_rect.collidepoint(event.pos):
+                        print("TUTORIAL")
+                        pygame.display.flip()
+                        pygame.display.update()
                         return False
+            pygame.display.update()
     def game_options(self):
         player_amount = 1
-        self.max_cards_on_screen = 3
 
         while True:
             self.screen.fill(self.black)
@@ -943,16 +948,16 @@ class GameState:
             return int(event.unicode)
     ####################    HELPER FUNCTIONS    ##########################
     def run_tutorial(self):
+        self.player_amount = 4
         self.init_buttons()
         self.init_cards()
-        self.game_options()
         self.screen.fill(self.background)
         pygame.display.update()
         self.clock.tick(30)
         self.players = []
         for i in range(0,4):
-            self.player_nums[i + 1] = Player(i + 1, [5], f"Player {i + 1}")
-            self.players.append(self.player_nums[i + 1])
+            player = Player(i + 1, [5], f"Player {i + 1}")
+            self.players.append(player)
             if i == 0:
                 self.players[-1].cards = [('d', 7),('h', 6)]
             elif i == 1:
