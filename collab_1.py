@@ -481,7 +481,6 @@ class GameState:
         self.sounds['1'] = pygame.mixer.Sound("sounds/1.mp3")
         self.sounds['2'] = pygame.mixer.Sound("sounds/2.mp3")
         self.sounds['3'] = pygame.mixer.Sound("sounds/3.mp3")
-
         self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
         self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
         self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
@@ -489,12 +488,20 @@ class GameState:
         self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
         self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
         self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
+        self.sounds['tutorial_hit'] = pygame.mixer.Sound("sounds/tutorial_hit.mp3")
+        self.sounds['tutorial_double'] = pygame.mixer.Sound("sounds/tutorial_double.mp3")
+        self.sounds['tutorial_stand'] = pygame.mixer.Sound("sounds/tutorial_stand.mp3")
+        self.sounds['tutorial_split'] = pygame.mixer.Sound("sounds/tutorial_split.mp3")
+        self.sounds['tutorial_end'] = pygame.mixer.Sound("sounds/tutorial_end.mp3")
 
         self.clock = pygame.time.Clock()
-        a = True
-        while a:
+        play_game = self.game_or_tutorial()
+        while play_game:
             self.run_game()
-            a = self.display_again_screen()
+            play_game = self.display_again_screen()
+        if play_game is False:
+            self.run_tutorial()
+            GameState()
         stop_dc1()
         cap.release()
         pygame.quit()
@@ -558,6 +565,8 @@ class GameState:
         self.clock.tick(30)
     def init_buttons(self):
         self.play_button = self.font.render("Play", True, self.white)
+        self.button_game = self.font.render("Game", True, self.white)
+        self.button_tutorial = self.font.render("Tutorial", True, self.white)
         self.button_hit = self.font.render("Hit", True, self.white)
         self.button_double = self.font.render("Double", True, self.white)
         self.button_stand = self.font.render("Stand", True, self.white)
@@ -568,6 +577,8 @@ class GameState:
             f"MINIMUM Bet: ${self.min_bet}", True, self.white)
 
         self.play_rect = self.play_button.get_rect()
+        self.game_rect = self.button_game.get_rect()
+        self.tutorial_rect = self.button_tutorial.get_rect()
         self.hit_rect = self.button_hit.get_rect()
         self.double_rect = self.button_double.get_rect()
         self.stand_rect = self.button_stand.get_rect()
@@ -576,8 +587,11 @@ class GameState:
         self.stop_rect = self.button_stop.get_rect()
         self.min_bet_rect = self.min_bet_txt.get_rect()
 
-        self.play_rect.center = (
-            self.screen_width // 2, self.screen_height // 2)
+        self.play_rect.center = (self.screen_width // 2, self.screen_height // 2)
+        self.game_rect.center = (self.screen_width // 2 +
+                                100, self.screen_height // 2)
+        self.tutorial_rect.center = (self.screen_width // 2 -
+                                100, self.screen_height // 2)
         self.hit_rect.center = (50, 30)
         self.double_rect.center = (210, 30)
         self.stand_rect.center = (115, 30)
@@ -588,7 +602,20 @@ class GameState:
                                  100, self.screen_height // 2)
 
         self.min_bet_rect.center = (125, 40)
-
+    def game_or_tutorial(self):
+        while True:
+            self.screen.fill(self.black)
+            self.screen.blit(self.button_game, self.game_rect)
+            self.screen.blit(self.button_tutorial, self.tutorial_rect)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    break
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.game_rect.collidepoint(event.pos):
+                        return True
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if self.tutorial_rect.collidepoint(event.pos):
+                        return False
     def game_options(self):
         player_amount = 1
         self.max_cards_on_screen = 3
@@ -618,17 +645,11 @@ class GameState:
 
             self.display_player_number(player_amount)
     def init_game(self):
-        print("BUTTONS")
         self.init_buttons()
-        print("IMAGES")
         self.init_cards()
-        print("HOME")
         self.game_options()
         self.screen.fill(self.background)
-        print("STARTING")
-        turn_dc1()
         self.init_players()
-        print("DEALER")
         self.init_dealer()
         self.screen.blit(self.min_bet_txt, self.min_bet_rect)
         pygame.display.update()
@@ -639,6 +660,7 @@ class GameState:
     def handle_move(self, move, player, pos):
         if move == 'OK':
             print("RUNNING HIT")
+            self.hit(player)
             self.render_hit(player, pos)
             player_points = player.get_points()
 
@@ -671,6 +693,7 @@ class GameState:
                 self.render_cards_on_screen(player.number - 1)
 
         elif move == 'closed':
+            self.double(player)
             self.render_double(player, pos)
             player_points = player.get_points()
 
@@ -714,7 +737,6 @@ class GameState:
 
         pygame.mixer.Sound.play(self.sounds[txt.upper()])
     def render_hit(self, player, pos):
-        self.hit(player)
         points = self.font.render(str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
@@ -732,7 +754,6 @@ class GameState:
         pygame.display.update()
         self.clock.tick(30)
     def render_double(self,player, pos):
-        self.double(player)
         points = self.font.render(str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
         points_rect.center = (
@@ -783,7 +804,7 @@ class GameState:
         self.screen.blit(points, points_rect)
 
         inzet = self.font.render("INZET: " + str(
-            player.get_inzet()), True, self.white)
+            player.get_total_bet()), True, self.white)
         inzet_rect = inzet.get_rect()
         inzet_rect.center = (
             (number + 1) * self.screen_width // (self.player_amount + 1) - 30, 500)
@@ -921,9 +942,87 @@ class GameState:
         if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7] and event.unicode.isdigit():
             return int(event.unicode)
     ####################    HELPER FUNCTIONS    ##########################
-
+    def run_tutorial(self):
+        self.init_buttons()
+        self.init_cards()
+        self.game_options()
+        self.screen.fill(self.background)
+        pygame.display.update()
+        self.clock.tick(30)
+        self.players = []
+        for i in range(0,4):
+            self.player_nums[i + 1] = Player(i + 1, [5], f"Player {i + 1}")
+            self.players.append(self.player_nums[i + 1])
+            if i == 0:
+                self.players[-1].cards = [('d', 7),('h', 6)]
+            elif i == 1:
+                self.players[-1].cards = [('s', 10), ('c', 4)]
+            elif i == 2:
+                self.players[-1].cards = [('h', 'j'), ('d', 1)]
+            elif i == 3:
+                self.players[-1].cards = [('h', 10), ('d', 10)]
+            self.dealer = Player('d', [], 'dealer')
+            self.dealer.cards = [('h',1),('s',2)]
+            if i >= 0 and i < 2:
+                self.players[i].display_player_cards(self, i + 1)
+        number = 0
+        while True:
+            if number < self.player_amount:
+                player = self.players[number]
+                self.render_cards_on_screen(number)
+                turn = self.font.render(
+                    f"YOUR TURN {player.name}", True, (50, 50, 50))
+                turn_rect = turn.get_rect()
+                turn_rect.center = (2 * self.screen_width //
+                                    (self.max_cards_on_screen + 1), 450)
+                self.screen.blit(turn, turn_rect)
+                pygame.display.update()
+                self.clock.tick(30)
+                play = "CONTINUE"
+                while play != "STOP":
+                    self.display_count_down(number)
+                    move = None
+                    if number == 0:
+                        pygame.mixer.Sound.play(self.sounds["tutorial_hit"])
+                        while move is not 'OK':
+                            move = recognise_hand()
+                        self.render_hit(player,1)
+                    if number == 1:
+                        pygame.mixer.Sound.play(self.sounds["tutorial_double"])
+                        while move is not 'closed':
+                            move = recognise_hand()
+                        self.render_double(player, 1)
+                    if number == 2:
+                        pygame.mixer.Sound.play(self.sounds["tutorial_stand"])
+                        while move is not 'Peace':
+                            move = recognise_hand()
+                    if number == 3:
+                        pygame.mixer.Sound.play(self.sounds["tutorial_split"])
+                        while move is not 'Fakjoe':
+                            move = recognise_hand()
+                        new_player = Player(player.number, self.min_bet,
+                                            player.name + "-" + str(player.hand_amount))
+                        player.hand_amount += 1
+                        new_player.cards = [player.cards[1]]
+                        new_player.get_card(self.random_card_choice())
+                        player.cards = [player.cards[0]]
+                        player.get_card(self.random_card_choice())
+                        self.players.insert(
+                            player.number + player.hand_amount - 2, new_player)
+                        self.player_amount += 1
+                        self.render_cards_on_screen(player.number - 1)
+                    pygame.mixer.Sound.play(self.sounds["tutorial_end"])
+                    time.sleep(1)
+                    self.clear_move()
+                pygame.display.update()
+                self.clock.tick(30)
+                pygame.draw.rect(self.screen, self.background, turn_rect)
+                number += 1
+            else:
+                break
     def run_game(self):
         self.init_game()
+        turn_dc1()
         self.busted_players = []
         number = 0
         angle = 270/self.player_amount
