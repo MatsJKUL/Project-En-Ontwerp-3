@@ -61,7 +61,7 @@ back = 'back'
 card_images[(back, back)] = pygame.image.load(
     os.path.join(card_path, f'{back}.png'))
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Blackjack Cards")
 
 WHITE = (255, 255, 255)
@@ -69,6 +69,7 @@ BLACK = (0, 0, 0)
 
 # Police de texte
 font = pygame.font.Font(None, 36)
+clock = pygame.time.Clock()
 
 # Création du bouton Play
 # Variable pour le démarrage du code principal
@@ -77,10 +78,22 @@ running = False
 # Variable pour contrôler la boucle principale
 game_start = True
 
+# Variable pour le démarrage du code principal
+game_started = False
+
+# Variable pour le nombre de joueurs
+number_of_player = 1
+
+# Variable pour contrôler la boucle principale
+run = True
+Game = False
+Tutorial = False
 # Police de texte
 
 # Création du bouton Play
 play_button = font.render("Play", True, WHITE)
+button_tutorial = font.render("Tutorial",True,WHITE)
+button_game = font.render("Game",True,WHITE)
 button_hit = font.render("Hit", True, WHITE)
 button_double = font.render("Double", True, WHITE)
 button_stand = font.render("Stand", True, WHITE)
@@ -94,7 +107,11 @@ stand_rect = button_stand.get_rect()
 split_rect = split.get_rect()
 again_rect = button_again.get_rect()
 stop_rect = button_stop.get_rect()
-play_rect.center = (WIDTH // 2, HEIGHT // 2)
+game_rect = button_game.get_rect()
+tutorial_rect = button_tutorial.get_rect()
+play_rect.center = ((WIDTH // 2), HEIGHT // 2)
+game_rect.center = ((WIDTH // 2) + 100, HEIGHT // 2)
+tutorial_rect.center = ((WIDTH // 2) - 100, HEIGHT // 2)
 hit_rect.center = (50, 30)
 double_rect.center = (210, 30)
 stand_rect.center = (115, 30)
@@ -102,19 +119,86 @@ split_rect.center = (260, 30)
 again_rect.center = (WIDTH // 2 - 100, HEIGHT // 2)
 stop_rect.center = (WIDTH // 2 + 100, HEIGHT // 2)
 
-# Variable pour le démarrage du code principal
-game_started = False
 
-# Variable pour le nombre de joueurs
-number_of_player = 1
-
-# Variable pour contrôler la boucle principale
-run = True
 
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+        if event.type == pygame.MOUSEBUTTONDOWN and not running:
+            # Si le bouton Play est cliqué, démarrez le code principal
+            if game_rect.collidepoint(event.pos):
+                running = True
+                Game = True
+            elif tutorial_rect.collidepoint(event.pos):
+                running = True
+                Tutorial = True
+        if event.type == pygame.KEYDOWN and not running:
+            # Incrémente le nombre de joueurs de 1 à 7 avec les touches numériques
+            if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]:
+                number_of_player = int(event.unicode)
+        elif event.type == pygame.VIDEORESIZE:
+            WIDTH, HEIGHT = event.size
+            screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+            play_rect.center = ((WIDTH // 2), HEIGHT // 2)
+            game_rect.center = ((WIDTH // 2) + 100, HEIGHT // 2)
+            tutorial_rect.center = ((WIDTH // 2) - 100, HEIGHT // 2)
+            hit_rect.center = (50, 30)
+            double_rect.center = (210, 30)
+            stand_rect.center = (115, 30)
+            split_rect.center = (260, 30)
+            again_rect.center = (WIDTH // 2 - 100, HEIGHT // 2)
+            stop_rect.center = (WIDTH // 2 + 100, HEIGHT // 2)
+
+    pygame.display.flip()
+    clock.tick(60)
+    screen.fill(BLACK)
+    if not running and not Game and not Tutorial:
+        screen.blit(button_game, game_rect)
+        screen.blit(button_tutorial,tutorial_rect)
+        # Affichage du nombre de joueurs
+        pygame.display.update()
+    # Affichage du bouton Play
+    # Code principal (à exécuter après avoir cliqué sur "Play")
+    if running:
+        # Votre code principal ici
+        run = False
+        pygame.display.flip()
+running = False
+buttons_visible = False
+while Tutorial:
+    screen.fill(background)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        # Clear the screen
+    pygame.display.update()
+    # text writing rules of Black Jack
+    # Welcome to the tutorial of this game let's first introduce you the rules of black jack
+    # In black you play against the dealer and not the other players, the goal is to reach a score of 21 without exceeding it.
+    # Each card below 10 have the same value as their number. Jack , queen and king have all the value 10. Ace can have a value one or ten
+    # depending what's more benefit. There are differents move that you can do to win the game let's introduce them with some examples.
+    # HIT
+    # first when you start the game you have to give a initial stake, you have the choice between 5 or 10. The dealer gives you cards and also cards
+    # to himself. You see that you have 7 points which is pretty low. So you'll do a hit, hit means to ask the dealer for another card. To do a hit you just need to...
+    # Now you have 11 points which is still pretty low, so you'll do another hit. You can do as many hit as you want if
+    # you're not exceeding 21. Now you have 19 points which is near 21. It'll be to risky to ask again for antoher card so you choose to stand,
+    # to do a stand you have to do.... Now the other card of the dealer is reaveled and he will give himself cards until he has at least 17 points
+    # The dealer has now 18 points which is lower than you so you win and you get the double of your initial stake! Well played !
+    # Another move that you can do is double. When you play double you double your initial stake, but you can only do one double and when you do it you cannot do another move anymore.
+    # Let's see an example. To play double just do.... The dealer has 23 points so you win ! And take then the double of the total stake that you gave.
+    # The last move, Split, happens only when you have two cards with the same value. Do a split will give two hands so you can win two times but also lose two times
+    # so be sure that you want to take that risk. Let's see an example.
+    # to do a split just do.... Now you have to give the system another stake for the second hand. The dealer will add a card to each hand.
+    # Do a split for the first hand and a stand for the other. That's a pitty you exceed 21 with your first hand wich means you're busted.
+    # the dealer has a score of 21 and with your another hand you only have a score of 19 which means that you also loose. Maybe next time
+    # you'll have more luck. Now let's play a real game to see if you understood everything
+while Game:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+            pygame.quit()
+            sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN and not running:
             # Si le bouton Play est cliqué, démarrez le code principal
             if play_rect.collidepoint(event.pos):
@@ -124,8 +208,6 @@ while run:
             if event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6, pygame.K_7]:
                 number_of_player = int(event.unicode)
     screen.fill(BLACK)
-
-    # Affichage du bouton Play
     if not running:
         screen.blit(play_button, play_rect)
         # Affichage du nombre de joueurs
@@ -135,16 +217,13 @@ while run:
         text_rect.center = (WIDTH // 2, HEIGHT // 2 + 50)
         screen.blit(text, text_rect)
         pygame.display.update()
-
-    # Code principal (à exécuter après avoir cliqué sur "Play")
     if running:
         # Votre code principal ici
-        run = False
+        Game = False
         pygame.display.flip()
 
 
-clock = pygame.time.Clock()
-buttons_visible = False
+
 while running:
     screen.fill(background)
     for event in pygame.event.get():
