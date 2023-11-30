@@ -50,7 +50,7 @@ def stop_dc1():
     GPIO.output(dc1_pin, GPIO.LOW)
 
 def turn_dc2():
-    print(dc2)
+    print('dc2')
     GPIO.output(dc2_pin, GPIO.HIGH)
 
 def stop_dc2():
@@ -124,6 +124,7 @@ with open('model/keypoint_classifier/keypoint_classifier_label.csv',
 
 
 def recognise_hand():
+    print('recognize_hand')
     icount = 0
     while True:
         hand_sign_id = None
