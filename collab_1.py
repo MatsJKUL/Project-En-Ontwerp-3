@@ -540,6 +540,7 @@ class GameState:
     def init_players(self):
         self.player_nums = {}
         self.players = []
+        bet = [0]
         for i in range(0, self.player_amount):
             self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
             self.players.append(self.player_nums[i+1])
