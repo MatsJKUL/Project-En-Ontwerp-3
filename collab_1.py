@@ -32,10 +32,6 @@ GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #setup limit_switch
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setmode(GPIO.BCM)  # Set the GPIO mode to use the BCM numbering
 
-
-
-
-
 def turn_dc1():
     print('turndc1')
     GPIO.output(dc1_pin, GPIO.HIGH)
@@ -223,6 +219,7 @@ class Player:
         self.name = name
         self.add_points()
         self.hand_amount = 1
+        self.state = ''
 
     def get_bet(self):
         print('get_bet')
@@ -292,7 +289,7 @@ class Player:
     def get_card_amount(self):
         return len(self.cards)
 
-    def get_winst(self):
+    def get_winst(self,gamestate):
         if self.state == 'BUSTED':
             return -self.get_total_bet()
         elif self.state == 'PUSH':
@@ -300,11 +297,11 @@ class Player:
         elif self.state == 'WIN':
             for i in self.bet:
                 if i == 10:
-                    self.turn_servo2(0)
-                    self.turn_servo2(90)
+                    gamestate.turn_servo2(0)
+                    gamestate.turn_servo2(90)
                 if i == 5:
-                    self.turn_servo2(180)
-                    self.turn_servo2(90)
+                    gamestate.turn_servo2(180)
+                    gamestate.turn_servo2(90)
             return 2*self.get_total_bet()
 
     def display_player_cards(self, game, pos):
@@ -433,6 +430,7 @@ class GameState:
                 pwm1.ChangeDutyCycle(duty_cycle)
                 time.sleep(.01)
         self.current_pos_1 = angle
+
     def init_cards(self):
         self.card_images = {}
         self.cards = []
@@ -747,7 +745,7 @@ class GameState:
         self.screen.blit(inzet, inzet_rect)
 
         winst = self.font.render("WINST: " + str(
-            player.get_winst()), True, self.white)
+            player.get_winst(self)), True, self.white)
         winst_rect = winst.get_rect()
         winst_rect.center = (
             (number + 1) * self.screen_width // (self.player_amount + 1) + 30, 550)
