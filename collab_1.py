@@ -354,6 +354,7 @@ class Player:
         self.hand_amount = 1
 
     def get_bet(self):
+        print('get_bet')
         move = None
         pygame.font.Font(None, 36).render(f"PLACE YOUR BET {self.name}", True, (50, 50, 50))
         while move is not 'OK':
@@ -538,6 +539,7 @@ class GameState:
         self.card_images[(self.back, self.back)] = pygame.image.load(
             os.path.join(card_path, f'{self.back}.png'))
     def init_players(self):
+        print('initPlayer')
         self.player_nums = {}
         self.players = []
         bet = [0]
@@ -569,6 +571,7 @@ class GameState:
         shoot_card()
         turn_servo1(0)
     def init_dealer(self):
+        print('init_dealer')
         self.dealer.get_card(self.random_card_choice())
         self.screen.blit(
             self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
@@ -663,6 +666,7 @@ class GameState:
 
             self.display_player_number(player_amount)
     def init_game(self):
+        print('init_game')
         self.init_buttons()
         self.init_cards()
         self.game_options()
