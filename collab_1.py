@@ -17,7 +17,7 @@ DEBUG = False
 ####################    MOTOR AND LIMIT_SWITCH   ##########################
 GPIO.setmode(GPIO.BCM) #setup motors
 servo1_pin = 14
-servo2_pin = 16
+servo2_pin = 15
 dc1_pin = 17
 dc2_pin = 18
 GPIO.setup(servo1_pin, GPIO.OUT)
