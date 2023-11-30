@@ -162,10 +162,10 @@ def recognise_hand():
                     return 'OK'
                 elif hand_sign_id == 4:
                     return 'Peace'
-                elif hand_sign_id == 5:
-                    return 'Fakjoe'
+                elif hand_sign_id == 0:
+                    return 'Phone'
                 if hand_sign_id == 1:
-                    return 'closed'
+                    return 'Thumb'
 
     cap.release()
 
@@ -492,7 +492,7 @@ class GameState:
         self.sounds['2'] = pygame.mixer.Sound("sounds/2.mp3")
         self.sounds['3'] = pygame.mixer.Sound("sounds/3.mp3")
         self.sounds['DETECT'] = pygame.mixer.Sound("sounds/DETECT.mp3")
-        self.sounds['FAKJOE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
+        self.sounds['PHONE'] = pygame.mixer.Sound("sounds/FAKJOE.mp3")
         self.sounds['HIT'] = pygame.mixer.Sound("sounds/HIT.mp3")
         self.sounds['DOUBLE'] = pygame.mixer.Sound("sounds/DOUBLE.mp3")
         self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
@@ -692,7 +692,7 @@ class GameState:
                 return "STOP"
             else:
                 return "CONTINUE"
-        elif move == "Fakjoe":
+        elif move == "PHONE":
             if player.cards[0][1] != player.cards[1][1] and len(player.cards) == 2:
                 move = recognise_hand()
                 return self.handle_move(move, player, pos)
@@ -711,7 +711,7 @@ class GameState:
                 self.player_amount += 1
                 self.render_cards_on_screen(player.number - 1)
 
-        elif move == 'closed':
+        elif move == 'Thumb':
             self.double(player)
             self.render_double(player, pos)
             player_points = player.get_points()
@@ -1013,7 +1013,7 @@ class GameState:
                         self.render_hit(player,1)
                     if number == 1:
                         pygame.mixer.Sound.play(self.sounds["tutorial_double"])
-                        while move is not 'closed':
+                        while move is not 'Thumb':
                             move = recognise_hand()
                         self.render_double(player, 1)
                     if number == 2:
@@ -1022,7 +1022,7 @@ class GameState:
                             move = recognise_hand()
                     if number == 3:
                         pygame.mixer.Sound.play(self.sounds["tutorial_split"])
-                        while move is not 'Fakjoe':
+                        while move is not 'PHONE':
                             move = recognise_hand()
                         new_player = Player(player.number, self.min_bet,
                                             player.name + "-" + str(player.hand_amount))
