@@ -14,7 +14,7 @@ import RPi.GPIO as GPIO
 import time
 DEBUG = False
 
-####################    MOTOR   ##########################
+####################    MOTOR AND LIMIT_SWITCH   ##########################
 GPIO.setmode(GPIO.BCM) #setup motors
 servo1_pin = 14
 servo2_pin = 16
@@ -28,6 +28,8 @@ pwm1 = GPIO.PWM(servo1_pin, 50)
 pwm1.start(0)
 pwm2 = GPIO.PWM(servo2_pin, 50)
 pwm2.start(0)
+GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP) #setup limit_switch
+GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def turn_servo1(angle):
     duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
@@ -58,8 +60,7 @@ def shoot_card():
     turn_dc2()
     time.sleep(1.5)
     stop_dc2()
-####################    MOTOR   ##########################
-
+####################    MOTOR AND LIMIT_SWITCH   ##########################
 
 ####################    HAND RECOGNISION   ##########################
 def get_args():
@@ -352,6 +353,17 @@ class Player:
         self.add_points()
         self.hand_amount = 1
 
+    def get_bet(self):
+        move = None
+        pygame.font.Font(None, 36).render(f"PLACE YOUR BET {self.name}", True, (50, 50, 50))
+        while move is not 'OK':
+            if GPIO.input(21) == 0:
+                self.bet.append(5)
+            elif GPIO.input(22) == 0:
+                self.bet.append(10)
+        if len(self.bet) == 0:
+            self.get_bet()
+
     def get_total_bet(self):
         return sum(self.bet)
 
@@ -486,6 +498,7 @@ class GameState:
         self.sounds['STAND'] = pygame.mixer.Sound("sounds/PEACE.mp3")
         self.sounds['BUST'] = pygame.mixer.Sound("sounds/BUST.mp3")
         self.sounds['CRASH'] = pygame.mixer.Sound("sounds/CRASH.mp3")
+        self.sounds['tutorial_start'] = pygame.mixer.Sound("sounds/start_tutorial.mp3")
         self.sounds['tutorial_hit'] = pygame.mixer.Sound("sounds/tutorial_hit.mp3")
         self.sounds['tutorial_double'] = pygame.mixer.Sound("sounds/tutorial_double.mp3")
         self.sounds['tutorial_stand'] = pygame.mixer.Sound("sounds/tutorial_stand.mp3")
@@ -528,7 +541,6 @@ class GameState:
         self.player_nums = {}
         self.players = []
         for i in range(0, self.player_amount):
-            bet = self.min_bet
             self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
             self.players.append(self.player_nums[i+1])
         angle = 270 / (self.player_amount + 1)
@@ -536,6 +548,7 @@ class GameState:
             player = self.players[number]
             shoot_card()
             player.get_card(self.random_card_choice())
+            player.get_bet()
             turn_servo1(angle*number)
         turn_servo1(270)
         self.dealer = Player('d', [], 'dealer')
@@ -600,7 +613,6 @@ class GameState:
                                   100, self.screen_height // 2)
         self.stop_rect.center = (self.screen_width // 2 +
                                  100, self.screen_height // 2)
-
         self.min_bet_rect.center = (125, 40)
     def game_or_tutorial(self):
         while True:
@@ -654,9 +666,11 @@ class GameState:
         self.init_cards()
         self.game_options()
         self.screen.fill(self.background)
+        self.screen.blit(self.min_bet_txt, self.min_bet_rect)
+        pygame.display.update()
+        self.clock.tick(30)
         self.init_players()
         self.init_dealer()
-        self.screen.blit(self.min_bet_txt, self.min_bet_rect)
         pygame.display.update()
         self.clock.tick(30)
     ####################    INITIALISING   ##########################
@@ -952,6 +966,10 @@ class GameState:
         self.init_buttons()
         self.init_cards()
         self.screen.fill(self.background)
+        self.screen.blit(
+            self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
+        self.screen.blit(
+            self.card_images[(self.back, self.back)], (580, 30))
         pygame.display.update()
         self.clock.tick(30)
         self.players = []
@@ -983,6 +1001,7 @@ class GameState:
                 self.screen.blit(turn, turn_rect)
                 pygame.display.update()
                 self.clock.tick(30)
+                pygame.mixer.Sound.play(self.sounds["tutorial_start"])
                 play = "CONTINUE"
                 while play != "STOP":
                     self.display_count_down(number)
