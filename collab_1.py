@@ -1,4 +1,5 @@
 import pygame
+import pigpio
 from pygame.locals import *
 import os
 import random
