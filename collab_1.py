@@ -428,11 +428,11 @@ class Player:
         elif self.state == 'WIN':
             for i in self.bet:
                 if i == 10:
-                    turn_servo2(0)
-                    turn_servo2(90)
+                    self.turn_servo2(0)
+                    self.turn_servo2(90)
                 if i == 5:
-                    turn_servo2(180)
-                    turn_servo2(90)
+                    self.turn_servo2(180)
+                    self.turn_servo2(90)
             return 2*self.get_total_bet()
 
     def display_player_cards(self, game, pos):
@@ -592,24 +592,24 @@ class GameState:
             shoot_card()
             player.get_card(self.random_card_choice())
             player.get_bet() #hier display
-            turn_servo1(angle*number)
-        turn_servo1(270)
+            self.turn_servo1(angle*number)
+        self.turn_servo1(270)
         self.dealer = Player('d', [], 'dealer')
         shoot_card()
         self.dealer.get_card(self.random_card_choice())
-        turn_servo1(0)
+        self.turn_servo1(0)
         for number in range(self.player_amount):
             player = self.players[number]
             shoot_card()
             player.get_card(self.random_card_choice())
-            turn_servo1(angle * number)
+            self.turn_servo1(angle * number)
             player = self.players[number]
             if number >= 0 and number < 2:
                 player.display_player_cards(self, number + 1)
-        turn_servo1(270)
+        self.turn_servo1(270)
         self.dealer.get_card(self.random_card_choice())
         shoot_card()
-        turn_servo1(0)
+        self.turn_servo1(0)
     def init_dealer(self):
         print('init_dealer')
         self.dealer.get_card(self.random_card_choice())
@@ -1118,10 +1118,10 @@ class GameState:
                 pygame.display.update()
                 self.clock.tick(30)
                 pygame.draw.rect(self.screen, self.background, turn_rect)
-                turn_servo1(angle*number)
+                self.turn_servo1(angle*number)
                 number += 1
             else:
-                turn_servo1(270)
+                self.turn_servo1(270)
                 break
         dealer_takes_card = True
         self.screen.blit(
@@ -1161,7 +1161,6 @@ class GameState:
             self.clock.tick(30)
 
         self.display_score()
-#ik haat mij
 if __name__ == '__main__':
     try:
         GameState()
