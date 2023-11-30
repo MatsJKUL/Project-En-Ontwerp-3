@@ -30,18 +30,47 @@ pwm2 = GPIO.PWM(servo2_pin, 50)
 pwm2.start(0)
 GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #setup limit_switch
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setmode(GPIO.BCM)  # Set the GPIO mode to use the BCM numbering
+servo_pin = 14          # The GPIO pin connected to the servo
+GPIO.setup(servo_pin, GPIO.OUT)
+current_pos_1 = 0
+current_pos_2 = 0
 
 def turn_servo1(angle):
     print('turnservo1')
-    duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
-    pwm1.ChangeDutyCycle(duty_cycle)
-    time.sleep(1)
+
+    if angle > current_pos_1:
+        print("FORWARD")
+        for i in range(int(current_pos_1), int(angle) + 1):
+            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+            pwm1.ChangeDutyCycle(duty_cycle)
+            time.sleep(.01)
+
+    elif angle < current_pos_1:
+        print("BACK")
+        for i in range(int(current_pos_1), int(angle) + 1, -1):
+            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+            pwm1.ChangeDutyCycle(duty_cycle)
+            time.sleep(.01)
+    current_pos_1 = angle
 
 def turn_servo2(angle):
     print('turnservo2')
-    duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
-    pwm2.ChangeDutyCycle(duty_cycle)
-    time.sleep(1)
+
+    if angle > current_pos_2:
+        print("FORWARD")
+        for i in range(int(current_pos_2), int(angle) + 1):
+            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+            pwm1.ChangeDutyCycle(duty_cycle)
+            time.sleep(.01)
+
+    elif angle < current_pos_2:
+        print("BACK")
+        for i in range(int(current_pos_2), int(angle) + 1, -1):
+            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+            pwm1.ChangeDutyCycle(duty_cycle)
+            time.sleep(.01)
+    current_pos_2 = angle
 def turn_dc1():
     print('turndc1')
     GPIO.output(dc1_pin, GPIO.HIGH)
