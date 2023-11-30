@@ -236,7 +236,7 @@ class Player:
         print('get_bet')
         move = None
         pygame.font.Font(None, 36).render(f"PLACE YOUR BET {self.name}", True, (50, 50, 50))
-        while move is not 'OK':
+        while move != 'OK':
             if GPIO.input(21) == 1:
                 self.bet.append(5)
                 print('bet veranderd')
@@ -937,21 +937,21 @@ class GameState:
                     move = None
                     if number == 0:
                         pygame.mixer.Sound.play(self.sounds["tutorial_hit"])
-                        while move is not 'OK':
+                        while move != 'OK':
                             move = recognise_hand()
                         self.render_hit(player,1)
                     if number == 1:
                         pygame.mixer.Sound.play(self.sounds["tutorial_double"])
-                        while move is not 'Thumb':
+                        while move != 'Thumb':
                             move = recognise_hand()
                         self.render_double(player, 1)
                     if number == 2:
                         pygame.mixer.Sound.play(self.sounds["tutorial_stand"])
-                        while move is not 'Peace':
+                        while move != 'Peace':
                             move = recognise_hand()
                     if number == 3:
                         pygame.mixer.Sound.play(self.sounds["tutorial_split"])
-                        while move is not 'Phone':
+                        while move != 'Phone':
                             move = recognise_hand()
                         new_player = Player(player.number, self.min_bet,
                                             player.name + "-" + str(player.hand_amount))
