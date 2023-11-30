@@ -363,7 +363,6 @@ class Player:
         move = None
         pygame.font.Font(None, 36).render(f"PLACE YOUR BET {self.name}", True, (50, 50, 50))
         while move is not 'OK':
-            print("check_cam")
             if GPIO.input(21) == 1:
                 self.bet.append(5)
                 print('bet veranderd')
