@@ -28,8 +28,8 @@ pwm1 = GPIO.PWM(servo1_pin, 50)
 pwm1.start(0)
 pwm2 = GPIO.PWM(servo2_pin, 50)
 pwm2.start(0)
-GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP) #setup limit_switch
-GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #setup limit_switch
+GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 def turn_servo1(angle):
     print('turnservo1')
@@ -363,11 +363,12 @@ class Player:
         move = None
         pygame.font.Font(None, 36).render(f"PLACE YOUR BET {self.name}", True, (50, 50, 50))
         while move is not 'OK':
-            if GPIO.input(21) == 0:
+            print("check_cam")
+            if GPIO.input(21) == 1:
                 self.bet.append(5)
                 print('bet veranderd')
                 move = recognise_hand()
-            elif GPIO.input(20) == 0:
+            elif GPIO.input(20) == 1:
                 self.bet.append(10)
                 print('bet veranderd')
                 move = recognise_hand()
