@@ -21,6 +21,7 @@ servo1_pin = 14
 servo2_pin = 15
 dc1_pin = 17
 dc2_pin = 18
+switch_pin = 27
 
 pwm1 = pigpio.pi()
 pwm2 = pigpio.pi()
