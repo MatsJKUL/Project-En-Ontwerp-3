@@ -31,46 +31,11 @@ pwm2.start(0)
 GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #setup limit_switch
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setmode(GPIO.BCM)  # Set the GPIO mode to use the BCM numbering
-servo_pin = 14          # The GPIO pin connected to the servo
-GPIO.setup(servo_pin, GPIO.OUT)
-current_pos_1 = 0
-current_pos_2 = 0
 
-def turn_servo1(angle):
-    print('turnservo1')
 
-    if angle > current_pos_1:
-        print("FORWARD")
-        for i in range(int(current_pos_1), int(angle) + 1):
-            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-            pwm1.ChangeDutyCycle(duty_cycle)
-            time.sleep(.01)
 
-    elif angle < current_pos_1:
-        print("BACK")
-        for i in range(int(current_pos_1), int(angle) + 1, -1):
-            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-            pwm1.ChangeDutyCycle(duty_cycle)
-            time.sleep(.01)
-    current_pos_1 = angle
 
-def turn_servo2(angle):
-    print('turnservo2')
 
-    if angle > current_pos_2:
-        print("FORWARD")
-        for i in range(int(current_pos_2), int(angle) + 1):
-            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-            pwm1.ChangeDutyCycle(duty_cycle)
-            time.sleep(.01)
-
-    elif angle < current_pos_2:
-        print("BACK")
-        for i in range(int(current_pos_2), int(angle) + 1, -1):
-            duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-            pwm1.ChangeDutyCycle(duty_cycle)
-            time.sleep(.01)
-    current_pos_2 = angle
 def turn_dc1():
     print('turndc1')
     GPIO.output(dc1_pin, GPIO.HIGH)
@@ -544,6 +509,9 @@ class GameState:
         self.sounds['tutorial_split'] = pygame.mixer.Sound("sounds/tutorial_split.mp3")
         self.sounds['tutorial_end'] = pygame.mixer.Sound("sounds/tutorial_end.mp3")
 
+        self.current_pos_1 = 0
+        self.current_pos_2 = 0
+
         self.max_cards_on_screen = 3
         self.clock = pygame.time.Clock()
         self.init_buttons()
@@ -559,6 +527,40 @@ class GameState:
         pygame.quit()
         servo_stop()
         quit()
+    def turn_servo2(self, angle):
+        print('turnservo2')
+
+        if angle > self.current_pos_2:
+            print("FORWARD")
+            for i in range(int(self.current_pos_2), int(angle) + 1):
+                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+                pwm1.ChangeDutyCycle(duty_cycle)
+                time.sleep(.01)
+
+        elif angle < self.current_pos_2:
+            print("BACK")
+            for i in range(int(self.current_pos_2), int(angle) + 1, -1):
+                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+                pwm1.ChangeDutyCycle(duty_cycle)
+                time.sleep(.01)
+        self.current_pos_2 = angle
+
+    def turn_servo1(self, angle):
+        print('turnservo1')
+        if angle > self.current_pos_1:
+            print("FORWARD")
+            for i in range(int(self.current_pos_1), int(angle) + 1):
+                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+                pwm1.ChangeDutyCycle(duty_cycle)
+                time.sleep(.01)
+
+        elif angle < self.current_pos_1:
+            print("BACK")
+            for i in range(int(self.current_pos_1), int(angle) + 1, -1):
+                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
+                pwm1.ChangeDutyCycle(duty_cycle)
+                time.sleep(.01)
+        self.current_pos_1 = angle
     def init_cards(self):
         self.card_images = {}
         self.cards = []
