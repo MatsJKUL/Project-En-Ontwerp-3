@@ -365,8 +365,12 @@ class Player:
         while move is not 'OK':
             if GPIO.input(21) == 0:
                 self.bet.append(5)
+                print('bet veranderd')
+                move = recognise_hand()
             elif GPIO.input(20) == 0:
                 self.bet.append(10)
+                print('bet veranderd')
+                move = recognise_hand()
         if len(self.bet) == 0:
             self.get_bet()
 
