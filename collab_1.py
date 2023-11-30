@@ -29,7 +29,7 @@ pwm1.start(0)
 pwm2 = GPIO.PWM(servo2_pin, 50)
 pwm2.start(0)
 GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP) #setup limit_switch
-GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def turn_servo1(angle):
     duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
@@ -359,7 +359,7 @@ class Player:
         while move is not 'OK':
             if GPIO.input(21) == 0:
                 self.bet.append(5)
-            elif GPIO.input(22) == 0:
+            elif GPIO.input(20) == 0:
                 self.bet.append(10)
         if len(self.bet) == 0:
             self.get_bet()
