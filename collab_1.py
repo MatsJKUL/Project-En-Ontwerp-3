@@ -1060,8 +1060,8 @@ class GameState:
             else:
                 break
     def run_game(self):
-        self.init_game()
         turn_dc1()
+        self.init_game()
         self.busted_players = []
         number = 0
         angle = 270/self.player_amount
