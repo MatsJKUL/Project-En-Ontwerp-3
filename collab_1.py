@@ -20,10 +20,12 @@ servo1_pin = 14
 servo2_pin = 15
 dc1_pin = 17
 dc2_pin = 18
+switch_pin = 27
 GPIO.setup(servo1_pin, GPIO.OUT)
 GPIO.setup(servo2_pin, GPIO.OUT)
 GPIO.setup(dc1_pin, GPIO.OUT)
 GPIO.setup(dc2_pin, GPIO.OUT)
+GPIO.setup(switch_pin, GPIO.OUT)
 pwm1 = GPIO.PWM(servo1_pin, 50)
 pwm1.start(0)
 pwm2 = GPIO.PWM(servo2_pin, 50)
@@ -43,6 +45,10 @@ def turn_dc2():
     print('dc2')
     GPIO.output(dc2_pin, GPIO.HIGH)
 
+def switch_dc2():
+    print('dc2switch')
+    GPIO.output(switch_pin, GPIO.HIGH)
+
 def stop_dc2():
     GPIO.output(dc2_pin, GPIO.LOW)
 def servo_stop():
@@ -54,6 +60,11 @@ def shoot_card():
     turn_dc2()
     time.sleep(1.5)
     stop_dc2()
+    switch_dc2()
+    turn_dc2()
+    time.sleep(0.1)
+    stop_dc2()
+    switch_dc2()
 ####################    MOTOR AND LIMIT_SWITCH   ##########################
 
 ####################    HAND RECOGNISION   ##########################
@@ -453,7 +464,7 @@ class GameState:
         self.player_nums = {}
         self.players = []
         bet = [0]
-        for i in range(0, self.player_amount):
+        for i in range(self.player_amount):
             self.player_nums[i+1] = Player(i+1, bet, f"Player {i+1}")
             self.players.append(self.player_nums[i+1])
         angle = 270 / (self.player_amount + 1)
@@ -461,7 +472,6 @@ class GameState:
             player = self.players[number]
             shoot_card()
             player.get_card(self.random_card_choice())
-            player.get_bet() #hier display
             self.turn_servo1(angle*number)
         self.turn_servo1(270)
         self.dealer = Player('d', [], 'dealer')
@@ -473,23 +483,30 @@ class GameState:
             shoot_card()
             player.get_card(self.random_card_choice())
             self.turn_servo1(angle * number)
-            player = self.players[number]
-            if number >= 0 and number < 2:
-                player.display_player_cards(self, number + 1)
         self.turn_servo1(270)
         self.dealer.get_card(self.random_card_choice())
         shoot_card()
         self.turn_servo1(0)
-    def init_dealer(self):
-        print('init_dealer')
-        self.dealer.get_card(self.random_card_choice())
+        for number in range(self.player_amount):
+            player = self.players[number]
+            self.screen.blit(
+                self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
+            self.screen.blit(
+                self.card_images[(self.back, self.back)], (580, 30))
+            player.display_player_cards(self,0)
+            pygame.display.update()
+            self.clock.tick(30)
+            player.get_bet()
+            self.screen.fill(self.background)
+            self.turn_servo1(angle * number)
+        for number in range(0,2):
+            player = self.players[number]
+            player.display_player_cards(self, number + 1)
         self.screen.blit(
             self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
         self.screen.blit(
             self.card_images[(self.back, self.back)], (580, 30))
-
-        pygame.display.update()
-        self.clock.tick(30)
+        self.turn_servo1(0)
     def init_buttons(self):
         self.play_button = self.font.render("Play", True, self.white)
         self.button_game = self.font.render("Game", True, self.white)
@@ -501,7 +518,8 @@ class GameState:
         self.button_again = self.font.render("Play again", True, self.white)
         self.button_stop = self.font.render("Stop", True, self.white)
         self.min_bet_txt = self.font.render(
-            f"MINIMUM Bet: ${self.min_bet}", True, self.white)
+            f"MINIMUM Bet: ${self.min_bet[0]}", True, self.white)
+        self.bet_txt = self.font.render( f"Place you bet", True, self.white)
 
         self.play_rect = self.play_button.get_rect()
         self.game_rect = self.button_game.get_rect()
@@ -513,6 +531,7 @@ class GameState:
         self.again_rect = self.button_again.get_rect()
         self.stop_rect = self.button_stop.get_rect()
         self.min_bet_rect = self.min_bet_txt.get_rect()
+        self.bet_txt_rect = self.bet_txt.get_rect()
 
         self.play_rect.center = (self.screen_width // 2, self.screen_height // 2)
         self.game_rect.center = (self.screen_width // 2 +
@@ -528,6 +547,8 @@ class GameState:
         self.stop_rect.center = (self.screen_width // 2 +
                                  100, self.screen_height // 2)
         self.min_bet_rect.center = (125, 40)
+        self.bet_txt_rect.center = (165,40)
+
     def game_or_tutorial(self):
         while True:
             self.screen.fill(self.black)
@@ -585,7 +606,6 @@ class GameState:
         pygame.display.update()
         self.clock.tick(30)
         self.init_players()
-        self.init_dealer()
         pygame.display.update()
         self.clock.tick(30)
     ####################    INITIALISING   ##########################
@@ -607,7 +627,7 @@ class GameState:
                 return "STOP"
             else:
                 return "CONTINUE"
-        elif move == "PHONE":
+        elif move == "Phone":
             if player.cards[0][1] != player.cards[1][1] and len(player.cards) == 2:
                 move = recognise_hand()
                 return self.handle_move(move, player, pos)
@@ -774,7 +794,6 @@ class GameState:
         self.screen.blit(clear, clear_rect)
         pygame.display.update()
 
-
     def clear_cards(self):
         rect = pygame.Rect((150, 400), (self.screen_width - 300, 350))
         pygame.draw.rect(self.screen, self.background, rect)
@@ -782,12 +801,10 @@ class GameState:
 
     def display_count(self, txt):
         f = pygame.font.Font(None, 80)
-
         count = f.render(txt, True, self.white)
         count_rect = count.get_rect()
         count_rect.center = (self.screen_width - 200, 150)
         pygame.mixer.Sound.play(self.sounds[txt])
-
         pygame.draw.rect(
             self.screen, (255, 0, 0), count_rect)
         self.screen.blit(count, count_rect)
@@ -806,7 +823,6 @@ class GameState:
         self.screen.blit(self.button_again, self.again_rect)
         self.screen.blit(self.button_stop, self.stop_rect)
         pygame.display.update()
-
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -841,7 +857,6 @@ class GameState:
         for number in range(self.player_amount):
             player = self.players[number]
             player_score = player.get_points()
-
             if player in self.busted_players:
                 player.state = 'BUSTED'
                 self.display_game_over("BUSTED", number, (255, 0, 0))
@@ -852,7 +867,6 @@ class GameState:
             elif player_score > dealer_score:
                 player.state = 'WIN'
                 self.display_game_over("YOU WON", number)
-
             elif player_score == dealer_score:
                 player.state = 'PUSH'
                 self.display_game_over("PUSH", number)
@@ -937,7 +951,7 @@ class GameState:
                             move = recognise_hand()
                     if number == 3:
                         pygame.mixer.Sound.play(self.sounds["tutorial_split"])
-                        while move is not 'PHONE':
+                        while move is not 'Phone':
                             move = recognise_hand()
                         new_player = Player(player.number, self.min_bet,
                                             player.name + "-" + str(player.hand_amount))
@@ -959,6 +973,7 @@ class GameState:
                 number += 1
             else:
                 break
+
     def run_game(self):
         turn_dc1()
         self.init_game()
@@ -1026,10 +1041,8 @@ class GameState:
                 points_rect.center = (600, 180)
                 pygame.draw.rect(self.screen, self.background, points_rect)
                 self.screen.blit(points, points_rect)
-
             pygame.display.update()
             self.clock.tick(30)
-
         self.display_score()
 if __name__ == '__main__':
     try:
