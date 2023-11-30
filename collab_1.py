@@ -20,14 +20,20 @@ servo1_pin = 14
 servo2_pin = 15
 dc1_pin = 17
 dc2_pin = 18
-GPIO.setup(servo1_pin, GPIO.OUT)
-GPIO.setup(servo2_pin, GPIO.OUT)
+
+pwm1 = pigpio.pi()
+pwm2 = pigpio.pi()
+
+pwm1.set_mode(servo1_pin, pigpio.OUTPUT)
+pwm2.set_mode(servo2_pin, pigpio.OUTPUT)
+
+pwm1.set_PWM_frequency(servo1_pin, 50)
+pwm2.set_PWM_frequency(servo2_pin, 50)
+
+
 GPIO.setup(dc1_pin, GPIO.OUT)
 GPIO.setup(dc2_pin, GPIO.OUT)
-pwm1 = GPIO.PWM(servo1_pin, 50)
-pwm1.start(0)
-pwm2 = GPIO.PWM(servo2_pin, 50)
-pwm2.start(0)
+
 GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_DOWN) #setup limit_switch
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setmode(GPIO.BCM)  # Set the GPIO mode to use the BCM numbering
@@ -46,9 +52,13 @@ def turn_dc2():
 def stop_dc2():
     GPIO.output(dc2_pin, GPIO.LOW)
 def servo_stop():
-    pwm1.stop()  # Stop the PWM signal
-    pwm2.stop()  # Stop the PWM signal
-    GPIO.cleanup()  # Clean up the GPIO configuration
+
+    pwm1.set_PWM_dutycycle(servo1_pin, 0)
+    pwm2.set_PWM_dutycycle(servo2_pin, 0)
+    pwm1.set_PWM_frequency(servo1_pin, 0)
+    pwm2.set_PWM_frequency(servo2_pin, 0)
+
+
 
 def shoot_card():
     turn_dc2()
@@ -396,21 +406,22 @@ class GameState:
         pygame.quit()
         servo_stop()
         quit()
+
     def turn_servo2(self, angle):
         print('turnservo2')
 
         if angle > self.current_pos_2:
             print("FORWARD")
             for i in range(int(self.current_pos_2), int(angle) + 1):
-                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-                pwm1.ChangeDutyCycle(duty_cycle)
+                pulsewidth = i/90*1000 + 500 # Map the angle to the duty cycle
+                pwm2.set_servo_pulsewidth(servo2_pin, pulsewidth)
                 time.sleep(.01)
 
         elif angle < self.current_pos_2:
             print("BACK")
             for i in range(int(self.current_pos_2), int(angle) + 1, -1):
-                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-                pwm1.ChangeDutyCycle(duty_cycle)
+                pulsewidth = i/90*1000 + 500 # Map the angle to the duty cycle
+                pwm2.set_servo_pulsewidth(servo2_pin, pulsewidth)
                 time.sleep(.01)
         self.current_pos_2 = angle
 
@@ -419,15 +430,15 @@ class GameState:
         if angle > self.current_pos_1:
             print("FORWARD")
             for i in range(int(self.current_pos_1), int(angle) + 1):
-                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-                pwm1.ChangeDutyCycle(duty_cycle)
+                pulsewidth = i/90*1000 + 500 # Map the angle to the duty cycle
+                pwm1.set_servo_pulsewidth(servo1_pin, pulsewidth)
                 time.sleep(.01)
 
         elif angle < self.current_pos_1:
             print("BACK")
             for i in range(int(self.current_pos_1), int(angle) + 1, -1):
-                duty_cycle = 2.5 + 10 * i / 270  # Map the angle to the duty cycle
-                pwm1.ChangeDutyCycle(duty_cycle)
+                pulsewidth = i/90*1000 + 500 # Map the angle to the duty cycle
+                pwm1.set_servo_pulsewidth(servo1_pin, pulsewidth)
                 time.sleep(.01)
         self.current_pos_1 = angle
 
