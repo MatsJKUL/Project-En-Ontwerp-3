@@ -32,21 +32,25 @@ GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP) #setup limit_switch
 GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def turn_servo1(angle):
+    print('turnservo1')
     duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
     pwm1.ChangeDutyCycle(duty_cycle)
     time.sleep(1)
 
 def turn_servo2(angle):
+    print('turnservo2')
     duty_cycle = 2.5 + 10 * angle / 270  # Map the angle to the duty cycle
     pwm2.ChangeDutyCycle(duty_cycle)
     time.sleep(1)
 def turn_dc1():
+    print('turndc1')
     GPIO.output(dc1_pin, GPIO.HIGH)
 
 def stop_dc1():
     GPIO.output(dc1_pin, GPIO.LOW)
 
 def turn_dc2():
+    print(dc2)
     GPIO.output(dc2_pin, GPIO.HIGH)
 
 def stop_dc2():
@@ -551,7 +555,7 @@ class GameState:
             player = self.players[number]
             shoot_card()
             player.get_card(self.random_card_choice())
-            player.get_bet()
+            player.get_bet() #hier display
             turn_servo1(angle*number)
         turn_servo1(270)
         self.dealer = Player('d', [], 'dealer')
