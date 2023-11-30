@@ -313,7 +313,7 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
     return (image, hand_sign_text)
 
 
-def draw_point_history(image, point_history):
+def draw_point_history(image, point_history): #weg
     for index, point in enumerate(point_history):
         if point[0] != 0 and point[1] != 0:
             cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
