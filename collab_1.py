@@ -65,7 +65,6 @@ def servo_stop():
     pwm2.set_PWM_frequency(servo2_pin, 0)
 
 
-
 def shoot_card():
     turn_dc2()
     time.sleep(1.5)
@@ -367,6 +366,7 @@ class GameState:
 
         self.screen_width, self.screen_height = 1200, 800
         self.font = pygame.font.Font(None, 36)
+        self.font2 = pygame.font.Font(None, 30)
         self.background = (1, 150, 32)
 
         self.min_bet = [5]
@@ -518,6 +518,7 @@ class GameState:
         self.screen.blit(
             self.card_images[(self.back, self.back)], (580, 30))
         self.turn_servo1(0)
+
     def init_buttons(self):
         self.play_button = self.font.render("Play", True, self.white)
         self.button_game = self.font.render("Game", True, self.white)
@@ -746,7 +747,7 @@ class GameState:
         pygame.display.update()
     def display_game_over(self, text, number, color=(255, 255, 255)):
         player = self.players[number]
-        name = self.font.render(
+        name = self.font2.render(
             str(f"{player.name}"), True, self.white)
         name_rect = name.get_rect()
         name_rect.center = ((number + 1) * self.screen_width //
@@ -755,31 +756,31 @@ class GameState:
         pygame.draw.rect(self.screen, self.background, name_rect)
         self.screen.blit(name, name_rect)
 
-        text = self.font.render(text, True, color)
+        text = self.font2.render(text, True, color)
         text_rect = text.get_rect()
         text_rect.center = (
             (number + 1) * self.screen_width // (self.player_amount + 1), 680)
         self.screen.blit(text, text_rect)
 
-        points = self.font.render(
-            "PUNTEN" + str(player.get_points()), True, self.white)
+        points = self.font2.render(
+            "POINTS" + str(player.get_points()), True, self.white)
         points_rect = points.get_rect()
-        points_rect.center = (
-            (number + 1) * self.screen_width // (self.player_amount + 1), 600)
+        points_rect.topleft = (
+            (number + 1) * self.screen_width // (self.player_amount + 1) - 10, 600)
         self.screen.blit(points, points_rect)
 
-        inzet = self.font.render("INZET: " + str(
+        inzet = self.font2.render("BET: " + str(
             player.get_total_bet()), True, self.white)
         inzet_rect = inzet.get_rect()
-        inzet_rect.center = (
-            (number + 1) * self.screen_width // (self.player_amount + 1) - 30, 500)
+        inzet_rect.topleft = (
+            (number + 1) * self.screen_width // (self.player_amount + 1) - 10, 500)
         self.screen.blit(inzet, inzet_rect)
 
-        winst = self.font.render("WINST: " + str(
+        winst = self.font2.render("WINST: " + str(
             player.get_winst(self)), True, self.white)
         winst_rect = winst.get_rect()
-        winst_rect.center = (
-            (number + 1) * self.screen_width // (self.player_amount + 1) + 30, 550)
+        winst_rect.topleft = (
+            (number + 1) * self.screen_width // (self.player_amount + 1) - 10, 550)
         self.screen.blit(winst, winst_rect)
 
     def render_bust(self, pos):
@@ -884,8 +885,8 @@ class GameState:
             else:
                 player.state = 'BUSTED'
                 self.display_game_over("YOU LOST", number)
-        pygame.display.update()
-        self.clock.tick(30)
+            pygame.display.update()
+            self.clock.tick(30)
     ####################    DISPLAYS    ##########################
 
     ####################    HELPER FUNCTIONS    ##########################
