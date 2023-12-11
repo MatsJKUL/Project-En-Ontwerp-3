@@ -1,5 +1,5 @@
 import pygame
-import pigpio
+#import pigpio
 from pygame.locals import *
 import os
 import random
@@ -11,12 +11,12 @@ import cv2 as cv
 import numpy as np
 import mediapipe as mp
 from model import KeyPointClassifier
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import time
 DEBUG = False
 
 ####################    MOTOR AND LIMIT_SWITCH   ##########################
-GPIO.setmode(GPIO.BCM) #setup motors
+'''GPIO.setmode(GPIO.BCM) #setup motors
 servo1_pin = 14
 servo2_pin = 15
 dc1_pin = 17
@@ -65,7 +65,7 @@ def servo_stop():
     pwm2.set_PWM_frequency(servo2_pin, 0)
 
 
-def shoot_card():
+def #shoot_card():
     turn_dc2()
     time.sleep(1.5)
     stop_dc2()
@@ -73,7 +73,7 @@ def shoot_card():
     turn_dc2()
     time.sleep(0.1)
     stop_dc2()
-    switch_dc2()
+    switch_dc2()'''
 ####################    MOTOR AND LIMIT_SWITCH   ##########################
 
 ####################    HAND RECOGNISION   ##########################
@@ -174,12 +174,16 @@ def recognise_hand():
                     continue
 
                 if hand_sign_id == 3:
+                    print('OK')
                     return 'OK'
                 elif hand_sign_id == 4:
+                    print('peace')
                     return 'Peace'
                 elif hand_sign_id == 0:
+                    print('phone')
                     return 'Phone'
                 if hand_sign_id == 1:
+                    print('Thumb')
                     return 'Thumb'
 
     cap.release()
@@ -241,7 +245,7 @@ class Player:
         self.hand_amount = 1
         self.state = ''
 
-    def get_bet(self):
+    '''def get_bet(self):
         print('get_bet')
         move = None
         pygame.font.Font(None, 36).render(f"PLACE YOUR BET {self.name}", True, (50, 50, 50))
@@ -255,7 +259,7 @@ class Player:
                 print('bet veranderd')
                 move = recognise_hand()
         if len(self.bet) == 0:
-            self.get_bet()
+            self.get_bet()'''
 
     def get_total_bet(self):
         return sum(self.bet)
@@ -481,23 +485,23 @@ class GameState:
         angle = 270 / (self.player_amount + 1)
         for number in range(self.player_amount):
             player = self.players[number]
-            shoot_card()
+            #shoot_card()
             player.get_card(self.random_card_choice())
-            self.turn_servo1(angle*number)
-        self.turn_servo1(270)
+            #self.turn_servo1(angle*number)
+        #self.turn_servo1(270)
         self.dealer = Player('d', [], 'dealer')
-        shoot_card()
+        #shoot_card()
         self.dealer.get_card(self.random_card_choice())
-        self.turn_servo1(0)
+        #self.turn_servo1(0)
         for number in range(self.player_amount):
             player = self.players[number]
-            shoot_card()
+            #shoot_card()
             player.get_card(self.random_card_choice())
-            self.turn_servo1(angle * number)
-        self.turn_servo1(270)
+            #self.turn_servo1(angle * number)
+        #self.turn_servo1(270)
         self.dealer.get_card(self.random_card_choice())
-        shoot_card()
-        self.turn_servo1(0)
+        #shoot_card()
+        #self.turn_servo1(0)
         for number in range(self.player_amount):
             player = self.players[number]
             self.screen.blit(
@@ -507,9 +511,9 @@ class GameState:
             player.display_player_cards(self,0)
             pygame.display.update()
             self.clock.tick(30)
-            player.get_bet()
+            #player.get_bet()
             self.screen.fill(self.background)
-            self.turn_servo1(angle * number)
+            #self.turn_servo1(angle * number)
         for number in range(0,2):
             player = self.players[number]
             player.display_player_cards(self, number + 1)
@@ -517,7 +521,7 @@ class GameState:
             self.card_images[self.dealer.get_card_by_index(0)], (550, 30))
         self.screen.blit(
             self.card_images[(self.back, self.back)], (580, 30))
-        self.turn_servo1(0)
+        #self.turn_servo1(0)
 
     def init_buttons(self):
         self.play_button = self.font.render("Play", True, self.white)
@@ -648,10 +652,10 @@ class GameState:
                                     player.name + "-" + str(player.hand_amount))
                 player.hand_amount += 1
                 new_player.cards = [player.cards[1]]
-                shoot_card()
+                #shoot_card()
                 new_player.get_card(self.random_card_choice())
                 player.cards = [player.cards[0]]
-                shoot_card()
+                #shoot_card()
                 player.get_card(self.random_card_choice())
                 self.players.insert(
                     player.number + player.hand_amount - 2, new_player)
@@ -676,11 +680,11 @@ class GameState:
             return 'STOP'
 
     def hit(self,player):
-        shoot_card()
+        #shoot_card()
         player.get_card(self.random_card_choice())
 
     def double(self,player):
-        shoot_card()
+        #shoot_card()
         player.get_card(self.random_card_choice())
     ####################    POSSIBLE MOVES   ##########################
 
@@ -987,7 +991,7 @@ class GameState:
                 break
 
     def run_game(self):
-        turn_dc1()
+        #turn_dc1()
         self.init_game()
         self.busted_players = []
         number = 0
@@ -1015,10 +1019,10 @@ class GameState:
                 pygame.display.update()
                 self.clock.tick(30)
                 pygame.draw.rect(self.screen, self.background, turn_rect)
-                self.turn_servo1(angle*number)
+                #self.turn_servo1(angle*number)
                 number += 1
             else:
-                self.turn_servo1(270)
+                #self.turn_servo1(270)
                 break
         dealer_takes_card = True
         self.screen.blit(
@@ -1043,7 +1047,7 @@ class GameState:
             elif dealer_score >= 17:
                 dealer_takes_card = False
             else:
-                shoot_card()
+                #shoot_card()
                 self.dealer.get_card(self.random_card_choice())
                 self.screen.blit(self.card_images[self.dealer.get_card_by_index(-1)],
                                  (550 + (self.dealer.get_card_amount() - 1) * 30, 30))
@@ -1062,5 +1066,5 @@ if __name__ == '__main__':
     except:
         cap.release()
         pygame.quit()
-        servo_stop()
-        stop_dc1()
+        #servo_stop()
+        #stop_dc1()

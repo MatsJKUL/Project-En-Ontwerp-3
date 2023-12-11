@@ -11,7 +11,7 @@ import cv2 as cv
 import numpy as np
 import mediapipe as mp
 
-from utils import CvFpsCalc
+from hand_detection.utils import cvfpscalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
 
@@ -38,6 +38,39 @@ def get_args():
     return args
 
 
+args = get_args()
+
+cap_device = args.device
+cap_width = args.width
+cap_height = args.height
+
+use_static_image_mode = args.use_static_image_mode
+min_detection_confidence = args.min_detection_confidence
+min_tracking_confidence = args.min_tracking_confidence
+
+use_brect = True
+
+
+cap = cv.VideoCapture(cap_device)
+cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
+cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
+mp_hands = mp.solutions.hands
+hands = mp_hands.Hands(
+    static_image_mode=use_static_image_mode,
+    max_num_hands=1,
+    min_detection_confidence=min_detection_confidence,
+    min_tracking_confidence=min_tracking_confidence,
+)
+
+keypoint_classifier = KeyPointClassifier()
+
+with open('model/keypoint_classifier/keypoint_classifier_label.csv',
+          encoding='utf-8-sig') as f:
+    keypoint_classifier_labels = csv.reader(f)
+    keypoint_classifier_labels = [
+        row[0] for row in keypoint_classifier_labels
+    ]
+
 
 
 
@@ -48,7 +81,7 @@ def main():
     return_waarde = None
     hand_gebaar = None
     while return_waarde is None:
-        fps = cvFpsCalc.get()
+        #fps = cvfpscalc.get()
 
         # Process Key (ESC: end) #################################################
         key = cv.waitKey(10)
@@ -253,7 +286,7 @@ def logging_csv(number, mode, landmark_list, point_history_list):
             writer = csv.writer(f)
             writer.writerow([number, *landmark_list])
     if mode == 2 and (0 <= number <= 9):
-        csv_path = 'model/point_history_classifier/point_history.csv'
+        csv_path = 'point_history.csv'
         with open(csv_path, 'a', newline="") as f:
             writer = csv.writer(f)
             writer.writerow([number, *point_history_list])
