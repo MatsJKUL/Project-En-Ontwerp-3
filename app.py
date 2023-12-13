@@ -53,7 +53,7 @@ def main():
     use_brect = True
 
     # Camera preparation ###############################################################
-    cap = cv.VideoCapture(2)
+    cap = cv.VideoCapture(cap_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
@@ -98,7 +98,6 @@ def main():
 
     #  ########################################################################
     mode = 0
-    print("pre while")
 
     while True:
         fps = cvFpsCalc.get()
@@ -112,7 +111,6 @@ def main():
         # Camera capture #####################################################
         ret, image = cap.read()
         if not ret:
-            print("broken cam")
             break
         image = cv.flip(image, 1)  # Mirror display
         debug_image = copy.deepcopy(image)
@@ -126,7 +124,6 @@ def main():
 
         #  ####################################################################
         if results.multi_hand_landmarks is not None:
-            print("doing landmarks")
             for hand_landmarks, handedness in zip(results.multi_hand_landmarks,
                                                   results.multi_handedness):
 
